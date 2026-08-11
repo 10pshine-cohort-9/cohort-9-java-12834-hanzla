@@ -1,19 +1,29 @@
 package com.tenpearls.contactmanagementsystem.repository;
 
 import com.tenpearls.contactmanagementsystem.entity.Contact;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
-public interface ContactRepository extends JpaRepository<Contact, Long> {
+public interface ContactRepository
+        extends JpaRepository<Contact, Long> {
 
     Page<Contact> findByUserId(
             Long userId,
             Pageable pageable
+    );
+
+    Optional<Contact> findByIdAndUserId(
+            Long id,
+            Long userId
     );
 
     long countByUserId(Long userId);
@@ -41,5 +51,4 @@ public interface ContactRepository extends JpaRepository<Contact, Long> {
             @Param("userId") Long userId,
             @Param("keyword") String keyword
     );
-
 }

@@ -8,12 +8,16 @@ import com.tenpearls.contactmanagementsystem.exception.ContactNotFoundException;
 import com.tenpearls.contactmanagementsystem.exception.UserNotFoundException;
 import com.tenpearls.contactmanagementsystem.repository.ContactRepository;
 import com.tenpearls.contactmanagementsystem.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,19 +29,30 @@ public class ContactService {
     private static final Logger logger =
             LoggerFactory.getLogger(ContactService.class);
 
-    private static final String CONTACT_NOT_FOUND = "Contact not found";
-    private static final String USER_NOT_FOUND = "User not found";
+    private static final String CONTACT_NOT_FOUND =
+            "Contact not found";
+
+    private static final String USER_NOT_FOUND =
+            "User not found";
 
     private final ContactRepository contactRepository;
+
     private final UserRepository userRepository;
 
-    public ContactResponse createContact(ContactRequest request) {
 
-        logger.info("Creating contact for user {}", request.getUserId());
+    public ContactResponse createContact(
+            Long userId,
+            ContactRequest request) {
 
-        User user = userRepository.findById(request.getUserId())
+        logger.info(
+                "Creating contact for user ID {}",
+                userId
+        );
+
+        User user = userRepository.findById(userId)
                 .orElseThrow(() ->
-                        new UserNotFoundException(USER_NOT_FOUND));
+                        new UserNotFoundException(USER_NOT_FOUND)
+                );
 
         Contact contact = Contact.builder()
                 .firstName(request.getFirstName())
@@ -55,10 +70,14 @@ public class ContactService {
 
         contact = contactRepository.save(contact);
 
-        logger.info("Contact saved successfully with id {}", contact.getId());
+        logger.info(
+                "Contact saved successfully with ID {}",
+                contact.getId()
+        );
 
         return mapToResponse(contact);
     }
+
 
     public List<ContactResponse> getAllContacts(
             Long userId,
@@ -66,39 +85,67 @@ public class ContactService {
             int size,
             String sortBy) {
 
-        logger.info("Fetching contacts page {} size {}", page, size);
+        logger.info(
+                "Fetching contacts for user ID {}, page {}, size {}",
+                userId,
+                page,
+                size
+        );
 
         Pageable pageable = PageRequest.of(
                 page,
                 size,
-                Sort.by(sortBy));
+                Sort.by(sortBy)
+        );
 
-        return contactRepository.findByUserId(userId, pageable)
+        return contactRepository
+                .findByUserId(userId, pageable)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
     }
 
-    public ContactResponse getContactById(Long id) {
 
-        logger.info("Fetching contact {}", id);
+    public ContactResponse getContactById(
+            Long userId,
+            Long contactId) {
 
-        Contact contact = contactRepository.findById(id)
+        logger.info(
+                "Fetching contact ID {} for user ID {}",
+                contactId,
+                userId
+        );
+
+        Contact contact = contactRepository
+                .findByIdAndUserId(contactId, userId)
                 .orElseThrow(() ->
-                        new ContactNotFoundException(CONTACT_NOT_FOUND));
+                        new ContactNotFoundException(
+                                CONTACT_NOT_FOUND
+                        )
+                );
 
         return mapToResponse(contact);
     }
 
+
     public ContactResponse updateContact(
-            Long id,
+            Long userId,
+            Long contactId,
             ContactRequest request) {
 
-        logger.info("Updating contact {}", id);
+        logger.info(
+                "Updating contact ID {} for user ID {}",
+                contactId,
+                userId
+        );
 
-        Contact contact = contactRepository.findById(id)
+        Contact contact = contactRepository
+                .findByIdAndUserId(contactId, userId)
                 .orElseThrow(() ->
-                        new ContactNotFoundException(CONTACT_NOT_FOUND));
+                        new ContactNotFoundException(
+                                CONTACT_NOT_FOUND
+                        )
+                );
 
         contact.setFirstName(request.getFirstName());
         contact.setLastName(request.getLastName());
@@ -106,63 +153,98 @@ public class ContactService {
         contact.setEmail(request.getEmail());
         contact.setPhoneNumber(request.getPhoneNumber());
 
-        contact.setFavorite(
-                request.getFavorite() != null
-                        ? request.getFavorite()
-                        : false
-        );
+        if (request.getFavorite() != null) {
+            contact.setFavorite(request.getFavorite());
+        }
 
         contact = contactRepository.save(contact);
 
-        logger.info("Contact {} updated successfully", id);
+        logger.info(
+                "Contact ID {} updated successfully",
+                contactId
+        );
 
         return mapToResponse(contact);
     }
 
-    public void deleteContact(Long id) {
 
-        logger.info("Deleting contact {}", id);
+    public void deleteContact(
+            Long userId,
+            Long contactId) {
 
-        Contact contact = contactRepository.findById(id)
+        logger.info(
+                "Deleting contact ID {} for user ID {}",
+                contactId,
+                userId
+        );
+
+        Contact contact = contactRepository
+                .findByIdAndUserId(contactId, userId)
                 .orElseThrow(() ->
-                        new ContactNotFoundException(CONTACT_NOT_FOUND));
+                        new ContactNotFoundException(
+                                CONTACT_NOT_FOUND
+                        )
+                );
 
         contactRepository.delete(contact);
 
-        logger.info("Contact deleted successfully");
+        logger.info(
+                "Contact ID {} deleted successfully",
+                contactId
+        );
     }
 
-    public ContactResponse toggleFavorite(Long id) {
 
-    logger.info("Toggling favorite status for contact {}", id);
+    public ContactResponse toggleFavorite(
+            Long userId,
+            Long contactId) {
 
-    Contact contact = contactRepository.findById(id)
-            .orElseThrow(() ->
-                    new ContactNotFoundException(CONTACT_NOT_FOUND));
+        logger.info(
+                "Toggling favorite for contact ID {} and user ID {}",
+                contactId,
+                userId
+        );
 
-    contact.setFavorite(!contact.getFavorite());
+        Contact contact = contactRepository
+                .findByIdAndUserId(contactId, userId)
+                .orElseThrow(() ->
+                        new ContactNotFoundException(
+                                CONTACT_NOT_FOUND
+                        )
+                );
 
-    contact = contactRepository.save(contact);
+        contact.setFavorite(!contact.getFavorite());
 
-    logger.info("Favorite status updated successfully");
+        contact = contactRepository.save(contact);
 
-    return mapToResponse(contact);
-}
+        logger.info(
+                "Favorite status updated successfully"
+        );
+
+        return mapToResponse(contact);
+    }
+
 
     public List<ContactResponse> searchContacts(
             Long userId,
             String keyword) {
 
-        logger.info("Searching contacts '{}' for user {}", keyword, userId);
+        logger.info(
+                "Searching contacts for user ID {} with query length {}",
+                userId,
+                keyword.length()
+        );
 
-return contactRepository
-        .searchContacts(userId, keyword)
-        .stream()
-        .map(this::mapToResponse)
-        .toList();
+        return contactRepository
+                .searchContacts(userId, keyword)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
-    private ContactResponse mapToResponse(Contact contact) {
+
+    private ContactResponse mapToResponse(
+            Contact contact) {
 
         return ContactResponse.builder()
                 .id(contact.getId())

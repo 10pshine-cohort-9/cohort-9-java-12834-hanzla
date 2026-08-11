@@ -2,9 +2,9 @@ package com.tenpearls.contactmanagementsystem.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 
-@Data
+@Getter
 @Builder
 @AllArgsConstructor
 public class LoginResponse {
@@ -20,5 +20,4 @@ public class LoginResponse {
     private String phoneNumber;
 
     private String message;
-
 }

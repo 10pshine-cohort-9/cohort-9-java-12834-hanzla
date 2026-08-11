@@ -30,14 +30,16 @@ public class UserService {
 
     public RegisterResponse register(RegisterRequest request) {
 
-        logger.info("Registering user {}", request.getEmail());
+        logger.info("User registration requested");
 
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException("Email already exists");
         }
 
         if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new PhoneNumberAlreadyExistsException("Phone number already exists");
+            throw new PhoneNumberAlreadyExistsException(
+                    "Phone number already exists"
+            );
         }
 
         User user = User.builder()
@@ -62,70 +64,90 @@ public class UserService {
                 .build();
     }
 
-    public LoginResponse login(LoginRequest request) {
-
-        logger.info("Login request received for {}", request.getUsername());
+    public User authenticate(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.getUsername())
-                .or(() -> userRepository.findByPhoneNumber(request.getUsername()))
+                .or(() ->
+                        userRepository.findByPhoneNumber(
+                                request.getUsername()
+                        )
+                )
                 .orElseThrow(() ->
-                        new InvalidCredentialsException("Invalid email/phone or password"));
+                        new InvalidCredentialsException(
+                                "Invalid email/phone or password"
+                        )
+                );
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (!passwordEncoder.matches(
+                request.getPassword(),
+                user.getPassword())) {
 
             throw new InvalidCredentialsException(
-                    "Invalid email/phone or password");
+                    "Invalid email/phone or password"
+            );
         }
 
-        logger.info("Login successful");
+        logger.info(
+                "User authentication successful for user ID {}",
+                user.getId()
+        );
 
-return LoginResponse.builder()
-        .id(user.getId())
-        .firstName(user.getFirstName())
-        .lastName(user.getLastName())
-        .email(user.getEmail())
-        .phoneNumber(user.getPhoneNumber())
-        .message("Login Successful")
-        .build();
+        return user;
     }
 
-    public String changePassword(ChangePasswordRequest request) {
+    public LoginResponse login(LoginRequest request) {
 
-        logger.info("Password change requested for {}", request.getEmail());
+        User user = authenticate(request);
 
-        User user = userRepository.findByEmail(request.getEmail())
+        return LoginResponse.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .phoneNumber(user.getPhoneNumber())
+                .message("Login Successful")
+                .build();
+    }
+
+    public String changePassword(
+            Long userId,
+            ChangePasswordRequest request) {
+
+        User user = userRepository.findById(userId)
                 .orElseThrow(() ->
-                        new UserNotFoundException("User not found"));
+                        new UserNotFoundException("User not found")
+                );
 
         if (!passwordEncoder.matches(
                 request.getOldPassword(),
                 user.getPassword())) {
 
             throw new InvalidPasswordException(
-                    "Old password is incorrect");
+                    "Old password is incorrect"
+            );
         }
 
         if (!request.getNewPassword()
                 .equals(request.getConfirmPassword())) {
 
             throw new InvalidPasswordException(
-                    "Passwords do not match");
+                    "Passwords do not match"
+            );
         }
 
         user.setPassword(
                 passwordEncoder.encode(
-                        request.getNewPassword()));
+                        request.getNewPassword()
+                )
+        );
 
         userRepository.save(user);
 
-        logger.info("Password updated successfully");
+        logger.info(
+                "Password updated successfully for user ID {}",
+                userId
+        );
 
         return "Password changed successfully";
     }
-    public String logout() {
-
-    logger.info("User logged out successfully");
-
-    return "Logout Successful";
-}
 }

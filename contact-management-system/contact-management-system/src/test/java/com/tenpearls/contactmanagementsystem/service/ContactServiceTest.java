@@ -63,6 +63,7 @@ class ContactServiceTest {
                 .title("Developer")
                 .email("ali@gmail.com")
                 .phoneNumber("03009999999")
+                .favorite(false)
                 .user(user)
                 .build();
 
@@ -73,158 +74,297 @@ class ContactServiceTest {
         request.setTitle("Developer");
         request.setEmail("ali@gmail.com");
         request.setPhoneNumber("03009999999");
-        request.setUserId(1L);
+        request.setFavorite(false);
     }
+
     @Test
-void createContact_ShouldCreateSuccessfully() {
+    void createContact_ShouldCreateSuccessfully() {
 
-    when(userRepository.findById(1L))
-            .thenReturn(Optional.of(user));
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
 
-    when(contactRepository.save(any(Contact.class)))
-            .thenReturn(contact);
+        when(contactRepository.save(any(Contact.class)))
+                .thenReturn(contact);
 
-    ContactResponse response =
-            contactService.createContact(request);
+        ContactResponse response =
+                contactService.createContact(1L, request);
 
-    assertNotNull(response);
+        assertNotNull(response);
 
-    assertEquals("Ali",
-            response.getFirstName());
+        assertEquals(
+                "Ali",
+                response.getFirstName()
+        );
 
-    verify(contactRepository)
-            .save(any(Contact.class));
-}
+        assertEquals(
+                "Khan",
+                response.getLastName()
+        );
 
-@Test
-void createContact_ShouldThrowUserNotFoundException() {
+        verify(userRepository)
+                .findById(1L);
 
-    when(userRepository.findById(1L))
-            .thenReturn(Optional.empty());
+        verify(contactRepository)
+                .save(any(Contact.class));
+    }
 
-    assertThrows(
-            UserNotFoundException.class,
-            () -> contactService.createContact(request));
+    @Test
+    void createContact_ShouldThrowUserNotFoundException() {
 
-    verify(contactRepository, never())
-            .save(any());
-}
-@Test
-void getContactById_ShouldReturnContact() {
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.empty());
 
-    when(contactRepository.findById(1L))
-            .thenReturn(Optional.of(contact));
+        assertThrows(
+                UserNotFoundException.class,
+                () -> contactService.createContact(1L, request)
+        );
 
-    ContactResponse response =
-            contactService.getContactById(1L);
+        verify(contactRepository, never())
+                .save(any(Contact.class));
+    }
 
-    assertEquals("Ali",
-            response.getFirstName());
-}
+    @Test
+    void getContactById_ShouldReturnContactForOwner() {
 
-@Test
-void getContactById_ShouldThrowException() {
+        when(contactRepository.findByIdAndUserId(1L, 1L))
+                .thenReturn(Optional.of(contact));
 
-    when(contactRepository.findById(1L))
-            .thenReturn(Optional.empty());
+        ContactResponse response =
+                contactService.getContactById(1L, 1L);
 
-    assertThrows(
-            ContactNotFoundException.class,
-            () -> contactService.getContactById(1L));
-}
-@Test
-void getAllContacts_ShouldReturnPage() {
+        assertNotNull(response);
 
-    Page<Contact> page =
-            new PageImpl<>(List.of(contact));
+        assertEquals(
+                "Ali",
+                response.getFirstName()
+        );
 
-    when(contactRepository.findByUserId(
-            eq(1L),
-            any(PageRequest.class)))
-            .thenReturn(page);
+        verify(contactRepository)
+                .findByIdAndUserId(1L, 1L);
+    }
 
-    List<ContactResponse> responses =
-            contactService.getAllContacts(
-                    1L,
-                    0,
-                    5,
-                    "firstName");
+    @Test
+    void getContactById_ShouldThrowExceptionWhenContactDoesNotBelongToUser() {
 
-    assertEquals(1,
-            responses.size());
-}
-@Test
-void updateContact_ShouldUpdateSuccessfully() {
+        when(contactRepository.findByIdAndUserId(1L, 2L))
+                .thenReturn(Optional.empty());
 
-    when(contactRepository.findById(1L))
-            .thenReturn(Optional.of(contact));
+        assertThrows(
+                ContactNotFoundException.class,
+                () -> contactService.getContactById(2L, 1L)
+        );
+    }
 
-    when(contactRepository.save(any(Contact.class)))
-            .thenReturn(contact);
+    @Test
+    void getAllContacts_ShouldReturnContactsForUser() {
 
-    ContactResponse response =
-            contactService.updateContact(1L, request);
+        Page<Contact> page =
+                new PageImpl<>(List.of(contact));
 
-    assertNotNull(response);
-    assertEquals("Ali", response.getFirstName());
+        when(contactRepository.findByUserId(
+                eq(1L),
+                any(PageRequest.class)
+        )).thenReturn(page);
 
-    verify(contactRepository).save(any(Contact.class));
-}
-@Test
-void updateContact_ShouldThrowContactNotFoundException() {
+        List<ContactResponse> responses =
+                contactService.getAllContacts(
+                        1L,
+                        0,
+                        5,
+                        "firstName"
+                );
 
-    when(contactRepository.findById(1L))
-            .thenReturn(Optional.empty());
+        assertNotNull(responses);
 
-    assertThrows(
-            ContactNotFoundException.class,
-            () -> contactService.updateContact(1L, request));
-}
-@Test
-void deleteContact_ShouldDeleteSuccessfully() {
+        assertEquals(
+                1,
+                responses.size()
+        );
 
-    when(contactRepository.findById(1L))
-            .thenReturn(Optional.of(contact));
+        assertEquals(
+                "Ali",
+                responses.get(0).getFirstName()
+        );
 
-    contactService.deleteContact(1L);
+        verify(contactRepository)
+                .findByUserId(
+                        eq(1L),
+                        any(PageRequest.class)
+                );
+    }
 
-    verify(contactRepository).delete(contact);
-}
-@Test
-void deleteContact_ShouldThrowContactNotFoundException() {
+    @Test
+    void updateContact_ShouldUpdateSuccessfully() {
 
-    when(contactRepository.findById(1L))
-            .thenReturn(Optional.empty());
+        when(contactRepository.findByIdAndUserId(1L, 1L))
+                .thenReturn(Optional.of(contact));
 
-    assertThrows(
-            ContactNotFoundException.class,
-            () -> contactService.deleteContact(1L));
-}
-@Test
-void searchContacts_ShouldReturnMatchingContacts() {
+        when(contactRepository.save(any(Contact.class)))
+                .thenReturn(contact);
 
-when(contactRepository.searchContacts(
-        anyLong(),
-        anyString()))
-.thenReturn(List.of(contact));
+        ContactResponse response =
+                contactService.updateContact(
+                        1L,
+                        1L,
+                        request
+                );
 
-    List<ContactResponse> responses =
-            contactService.searchContacts(1L, "Ali");
+        assertNotNull(response);
 
-    assertEquals(1, responses.size());
-    assertEquals("Ali", responses.get(0).getFirstName());
-}
-@Test
-void searchContacts_ShouldReturnEmptyList() {
+        assertEquals(
+                "Ali",
+                response.getFirstName()
+        );
 
-    when(contactRepository.searchContacts(
-            anyLong(),
-            anyString()))
-            .thenReturn(List.of());
+        verify(contactRepository)
+                .findByIdAndUserId(1L, 1L);
 
-    List<ContactResponse> responses =
-            contactService.searchContacts(1L, "XYZ");
+        verify(contactRepository)
+                .save(any(Contact.class));
+    }
 
-    assertTrue(responses.isEmpty());
-}
+    @Test
+    void updateContact_ShouldThrowExceptionWhenContactDoesNotBelongToUser() {
+
+        when(contactRepository.findByIdAndUserId(1L, 2L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                ContactNotFoundException.class,
+                () -> contactService.updateContact(
+                        2L,
+                        1L,
+                        request
+                )
+        );
+
+        verify(contactRepository, never())
+                .save(any(Contact.class));
+    }
+
+    @Test
+    void deleteContact_ShouldDeleteSuccessfully() {
+
+        when(contactRepository.findByIdAndUserId(1L, 1L))
+                .thenReturn(Optional.of(contact));
+
+        contactService.deleteContact(1L, 1L);
+
+        verify(contactRepository)
+                .findByIdAndUserId(1L, 1L);
+
+        verify(contactRepository)
+                .delete(contact);
+    }
+
+    @Test
+    void deleteContact_ShouldThrowExceptionWhenContactDoesNotBelongToUser() {
+
+        when(contactRepository.findByIdAndUserId(1L, 2L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                ContactNotFoundException.class,
+                () -> contactService.deleteContact(2L, 1L)
+        );
+
+        verify(contactRepository, never())
+                .delete(any(Contact.class));
+    }
+
+    @Test
+    void toggleFavorite_ShouldToggleSuccessfully() {
+
+        contact.setFavorite(false);
+
+        when(contactRepository.findByIdAndUserId(1L, 1L))
+                .thenReturn(Optional.of(contact));
+
+        when(contactRepository.save(any(Contact.class)))
+                .thenReturn(contact);
+
+        ContactResponse response =
+                contactService.toggleFavorite(1L, 1L);
+
+        assertNotNull(response);
+
+        assertTrue(
+                contact.getFavorite()
+        );
+
+        verify(contactRepository)
+                .findByIdAndUserId(1L, 1L);
+
+        verify(contactRepository)
+                .save(contact);
+    }
+
+    @Test
+    void toggleFavorite_ShouldThrowExceptionWhenContactDoesNotBelongToUser() {
+
+        when(contactRepository.findByIdAndUserId(1L, 2L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                ContactNotFoundException.class,
+                () -> contactService.toggleFavorite(2L, 1L)
+        );
+
+        verify(contactRepository, never())
+                .save(any(Contact.class));
+    }
+
+    @Test
+    void searchContacts_ShouldReturnMatchingContacts() {
+
+        when(contactRepository.searchContacts(
+                eq(1L),
+                eq("Ali")
+        )).thenReturn(List.of(contact));
+
+        List<ContactResponse> responses =
+                contactService.searchContacts(
+                        1L,
+                        "Ali"
+                );
+
+        assertNotNull(responses);
+
+        assertEquals(
+                1,
+                responses.size()
+        );
+
+        assertEquals(
+                "Ali",
+                responses.get(0).getFirstName()
+        );
+
+        verify(contactRepository)
+                .searchContacts(1L, "Ali");
+    }
+
+    @Test
+    void searchContacts_ShouldReturnEmptyList() {
+
+        when(contactRepository.searchContacts(
+                eq(1L),
+                eq("XYZ")
+        )).thenReturn(List.of());
+
+        List<ContactResponse> responses =
+                contactService.searchContacts(
+                        1L,
+                        "XYZ"
+                );
+
+        assertNotNull(responses);
+
+        assertTrue(
+                responses.isEmpty()
+        );
+
+        verify(contactRepository)
+                .searchContacts(1L, "XYZ");
+    }
 }

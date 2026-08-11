@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -32,9 +33,33 @@ public class SecurityConfig {
 
                 .cors(cors -> {})
 
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                )
+
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .anyRequest().permitAll()
+
+                        // Public authentication endpoints
+                        .requestMatchers(
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/login"
+                        ).permitAll()
+
+                        // Swagger / OpenAPI
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+
+                        // Everything else requires authentication
+                        .anyRequest().authenticated()
+                )
+
+                .logout(logout -> logout
+                        .logoutUrl("/api/v1/auth/logout")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID")
                 );
 
         return http.build();
@@ -46,13 +71,23 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(
-                List.of("http://localhost:5173"));
+                List.of("http://localhost:5173")
+        );
 
         configuration.setAllowedMethods(
-                List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+                List.of(
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "PATCH",
+                        "DELETE",
+                        "OPTIONS"
+                )
+        );
 
         configuration.setAllowedHeaders(
-                List.of("*"));
+                List.of("*")
+        );
 
         configuration.setAllowCredentials(true);
 
@@ -61,7 +96,8 @@ public class SecurityConfig {
 
         source.registerCorsConfiguration(
                 "/**",
-                configuration);
+                configuration
+        );
 
         return source;
     }

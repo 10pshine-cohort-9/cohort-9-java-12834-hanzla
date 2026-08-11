@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tenpearls.contactmanagementsystem.dto.ContactRequest;
 import com.tenpearls.contactmanagementsystem.entity.User;
 import com.tenpearls.contactmanagementsystem.repository.UserRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -11,10 +12,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import java.util.Collections;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -37,8 +43,6 @@ class ContactControllerTest {
     @BeforeEach
     void setup() {
 
-        userRepository.deleteAll();
-
         user = User.builder()
                 .firstName("Hanzla")
                 .lastName("Shehzad")
@@ -50,43 +54,73 @@ class ContactControllerTest {
         user = userRepository.save(user);
     }
 
+
+    private void authenticateUser() {
+
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        user.getId(),
+                        null,
+                        Collections.emptyList()
+                );
+
+        SecurityContext context =
+                SecurityContextHolder.createEmptyContext();
+
+        context.setAuthentication(authentication);
+
+        SecurityContextHolder.setContext(context);
+    }
+
+
     @Test
     void createContact_ShouldReturnCreated() throws Exception {
 
+        authenticateUser();
+
         ContactRequest request = new ContactRequest();
 
-        request.setUserId(user.getId());
         request.setFirstName("Ali");
         request.setLastName("Khan");
         request.setTitle("Software Engineer");
         request.setEmail("ali@gmail.com");
         request.setPhoneNumber("03001111111");
 
-        mockMvc.perform(post("/api/v1/contacts")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
 
+        mockMvc.perform(
+                post("/api/v1/contacts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(
+                                objectMapper.writeValueAsString(request)
+                        )
+        )
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.firstName").value("Ali"));
+                .andExpect(jsonPath("$.firstName")
+                        .value("Ali"));
     }
+
 
     @Test
     void getAllContacts_ShouldReturnOk() throws Exception {
 
-        mockMvc.perform(get("/api/v1/contacts/user/" + user.getId())
-                        .with(csrf()))
+        authenticateUser();
 
+        mockMvc.perform(
+                get("/api/v1/contacts")
+        )
                 .andExpect(status().isOk());
     }
+
 
     @Test
     void searchContacts_ShouldReturnOk() throws Exception {
 
-        mockMvc.perform(get("/api/v1/contacts/user/" + user.getId() + "/search")
-                        .param("keyword", "Ali")
-                        .with(csrf()))
+        authenticateUser();
 
+        mockMvc.perform(
+                get("/api/v1/contacts/search")
+                        .param("keyword", "Ali")
+        )
                 .andExpect(status().isOk());
     }
 }

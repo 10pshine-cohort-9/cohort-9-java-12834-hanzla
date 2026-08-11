@@ -50,21 +50,26 @@ class UserServiceTest {
     void setUp() {
 
         registerRequest = new RegisterRequest();
+
         registerRequest.setFirstName("Hanzla");
         registerRequest.setLastName("Shehzad");
         registerRequest.setEmail("hanzla@gmail.com");
         registerRequest.setPhoneNumber("03001234567");
         registerRequest.setPassword("123456");
 
+
         loginRequest = new LoginRequest();
+
         loginRequest.setUsername("hanzla@gmail.com");
         loginRequest.setPassword("123456");
 
+
         changePasswordRequest = new ChangePasswordRequest();
-        changePasswordRequest.setEmail("hanzla@gmail.com");
+
         changePasswordRequest.setOldPassword("123456");
         changePasswordRequest.setNewPassword("654321");
         changePasswordRequest.setConfirmPassword("654321");
+
 
         user = User.builder()
                 .id(1L)
@@ -75,199 +80,321 @@ class UserServiceTest {
                 .password("encodedPassword")
                 .build();
     }
+
+
     @Test
-void register_ShouldRegisterSuccessfully() {
+    void register_ShouldRegisterSuccessfully() {
 
-    when(userRepository.existsByEmail(registerRequest.getEmail()))
-            .thenReturn(false);
+        when(userRepository.existsByEmail(
+                registerRequest.getEmail()))
+                .thenReturn(false);
 
-    when(userRepository.existsByPhoneNumber(registerRequest.getPhoneNumber()))
-            .thenReturn(false);
+        when(userRepository.existsByPhoneNumber(
+                registerRequest.getPhoneNumber()))
+                .thenReturn(false);
 
-    when(passwordEncoder.encode(registerRequest.getPassword()))
-            .thenReturn("encodedPassword");
+        when(passwordEncoder.encode(
+                registerRequest.getPassword()))
+                .thenReturn("encodedPassword");
 
-    when(userRepository.save(any(User.class)))
-            .thenReturn(user);
+        when(userRepository.save(any(User.class)))
+                .thenReturn(user);
 
-    RegisterResponse response =
-            userService.register(registerRequest);
 
-    assertNotNull(response);
-    assertEquals("Hanzla", response.getFirstName());
-    assertEquals("Registration Successful", response.getMessage());
+        RegisterResponse response =
+                userService.register(registerRequest);
 
-    verify(userRepository).save(any(User.class));
-}
 
-@Test
-void register_ShouldThrowEmailAlreadyExistsException() {
+        assertNotNull(response);
 
-    when(userRepository.existsByEmail(registerRequest.getEmail()))
-            .thenReturn(true);
+        assertEquals(
+                "Hanzla",
+                response.getFirstName());
 
-    assertThrows(
-            EmailAlreadyExistsException.class,
-            () -> userService.register(registerRequest));
+        assertEquals(
+                "Registration Successful",
+                response.getMessage());
 
-    verify(userRepository, never()).save(any());
-}
+        verify(userRepository)
+                .save(any(User.class));
+    }
 
-@Test
-void register_ShouldThrowPhoneAlreadyExistsException() {
 
-    when(userRepository.existsByEmail(registerRequest.getEmail()))
-            .thenReturn(false);
+    @Test
+    void register_ShouldThrowEmailAlreadyExistsException() {
 
-    when(userRepository.existsByPhoneNumber(registerRequest.getPhoneNumber()))
-            .thenReturn(true);
+        when(userRepository.existsByEmail(
+                registerRequest.getEmail()))
+                .thenReturn(true);
 
-    assertThrows(
-            PhoneNumberAlreadyExistsException.class,
-            () -> userService.register(registerRequest));
 
-    verify(userRepository, never()).save(any());
-}
-@Test
-void login_ShouldLoginSuccessfullyWithEmail() {
+        assertThrows(
+                EmailAlreadyExistsException.class,
+                () -> userService.register(registerRequest));
 
-    loginRequest.setUsername("hanzla@gmail.com");
 
-    when(userRepository.findByEmail("hanzla@gmail.com"))
-            .thenReturn(Optional.of(user));
+        verify(userRepository, never())
+                .save(any());
+    }
 
-    when(passwordEncoder.matches(
-            loginRequest.getPassword(),
-            user.getPassword()))
-            .thenReturn(true);
 
-    LoginResponse response = userService.login(loginRequest);
+    @Test
+    void register_ShouldThrowPhoneAlreadyExistsException() {
 
-    assertNotNull(response);
-    assertEquals("Hanzla", response.getFirstName());
-    assertEquals("Login Successful", response.getMessage());
+        when(userRepository.existsByEmail(
+                registerRequest.getEmail()))
+                .thenReturn(false);
 
-    verify(userRepository).findByEmail("hanzla@gmail.com");
-}
-@Test
-void login_ShouldLoginSuccessfullyWithPhone() {
+        when(userRepository.existsByPhoneNumber(
+                registerRequest.getPhoneNumber()))
+                .thenReturn(true);
 
-    loginRequest.setUsername("03001234567");
 
-    when(userRepository.findByEmail("03001234567"))
-            .thenReturn(Optional.empty());
+        assertThrows(
+                PhoneNumberAlreadyExistsException.class,
+                () -> userService.register(registerRequest));
 
-    when(userRepository.findByPhoneNumber("03001234567"))
-            .thenReturn(Optional.of(user));
 
-    when(passwordEncoder.matches(
-            loginRequest.getPassword(),
-            user.getPassword()))
-            .thenReturn(true);
+        verify(userRepository, never())
+                .save(any());
+    }
 
-    LoginResponse response = userService.login(loginRequest);
 
-    assertNotNull(response);
-    assertEquals("Hanzla", response.getFirstName());
-    assertEquals("Login Successful", response.getMessage());
+    @Test
+    void authenticate_ShouldAuthenticateWithEmail() {
 
-    verify(userRepository).findByPhoneNumber("03001234567");
-}
-@Test
-void login_ShouldThrowInvalidCredentials_WhenUserNotFound() {
+        when(userRepository.findByEmail(
+                "hanzla@gmail.com"))
+                .thenReturn(Optional.of(user));
 
-    when(userRepository.findByEmail(anyString()))
-            .thenReturn(Optional.empty());
+        when(passwordEncoder.matches(
+                loginRequest.getPassword(),
+                user.getPassword()))
+                .thenReturn(true);
 
-    when(userRepository.findByPhoneNumber(anyString()))
-            .thenReturn(Optional.empty());
 
-    assertThrows(
-            InvalidCredentialsException.class,
-            () -> userService.login(loginRequest));
-}
-@Test
-void login_ShouldThrowInvalidCredentials_WhenPasswordIsWrong() {
+        User authenticatedUser =
+                userService.authenticate(loginRequest);
 
-    when(userRepository.findByEmail(loginRequest.getUsername()))
-            .thenReturn(Optional.of(user));
 
-    when(passwordEncoder.matches(
-            loginRequest.getPassword(),
-            user.getPassword()))
-            .thenReturn(false);
+        assertNotNull(authenticatedUser);
 
-    assertThrows(
-            InvalidCredentialsException.class,
-            () -> userService.login(loginRequest));
-}
-@Test
-void changePassword_ShouldChangePasswordSuccessfully() {
+        assertEquals(
+                1L,
+                authenticatedUser.getId());
 
-    when(userRepository.findByEmail(changePasswordRequest.getEmail()))
-            .thenReturn(Optional.of(user));
+        assertEquals(
+                "Hanzla",
+                authenticatedUser.getFirstName());
 
-    when(passwordEncoder.matches(
-            changePasswordRequest.getOldPassword(),
-            user.getPassword()))
-            .thenReturn(true);
 
-    when(passwordEncoder.encode(changePasswordRequest.getNewPassword()))
-            .thenReturn("newEncodedPassword");
+        verify(userRepository)
+                .findByEmail("hanzla@gmail.com");
+    }
 
-    String response = userService.changePassword(changePasswordRequest);
 
-    assertEquals("Password changed successfully", response);
+    @Test
+    void authenticate_ShouldAuthenticateWithPhone() {
 
-    verify(userRepository).save(user);
-}
-@Test
-void changePassword_ShouldThrowUserNotFoundException() {
+        loginRequest.setUsername("03001234567");
 
-    when(userRepository.findByEmail(changePasswordRequest.getEmail()))
-            .thenReturn(Optional.empty());
 
-    assertThrows(
-            UserNotFoundException.class,
-            () -> userService.changePassword(changePasswordRequest));
-}
-@Test
-void changePassword_ShouldThrowInvalidPassword_WhenOldPasswordIsWrong() {
+        when(userRepository.findByEmail(
+                "03001234567"))
+                .thenReturn(Optional.empty());
 
-    when(userRepository.findByEmail(changePasswordRequest.getEmail()))
-            .thenReturn(Optional.of(user));
+        when(userRepository.findByPhoneNumber(
+                "03001234567"))
+                .thenReturn(Optional.of(user));
 
-    when(passwordEncoder.matches(
-            changePasswordRequest.getOldPassword(),
-            user.getPassword()))
-            .thenReturn(false);
+        when(passwordEncoder.matches(
+                loginRequest.getPassword(),
+                user.getPassword()))
+                .thenReturn(true);
 
-    assertThrows(
-            InvalidPasswordException.class,
-            () -> userService.changePassword(changePasswordRequest));
-}
-@Test
-void changePassword_ShouldThrowInvalidPassword_WhenPasswordsDoNotMatch() {
 
-    changePasswordRequest.setConfirmPassword("differentPassword");
+        User authenticatedUser =
+                userService.authenticate(loginRequest);
 
-    when(userRepository.findByEmail(changePasswordRequest.getEmail()))
-            .thenReturn(Optional.of(user));
 
-    when(passwordEncoder.matches(
-            changePasswordRequest.getOldPassword(),
-            user.getPassword()))
-            .thenReturn(true);
+        assertNotNull(authenticatedUser);
 
-    assertThrows(
-            InvalidPasswordException.class,
-            () -> userService.changePassword(changePasswordRequest));
-}
-@Test
-void logout_ShouldReturnSuccessMessage() {
+        assertEquals(
+                1L,
+                authenticatedUser.getId());
 
-    String response = userService.logout();
 
-    assertEquals("Logout Successful", response);
-}
+        verify(userRepository)
+                .findByPhoneNumber("03001234567");
+    }
+
+
+    @Test
+    void authenticate_ShouldThrowInvalidCredentials_WhenUserNotFound() {
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        when(userRepository.findByPhoneNumber(anyString()))
+                .thenReturn(Optional.empty());
+
+
+        assertThrows(
+                InvalidCredentialsException.class,
+                () -> userService.authenticate(loginRequest));
+    }
+
+
+    @Test
+    void authenticate_ShouldThrowInvalidCredentials_WhenPasswordWrong() {
+
+        when(userRepository.findByEmail(
+                loginRequest.getUsername()))
+                .thenReturn(Optional.of(user));
+
+        when(passwordEncoder.matches(
+                loginRequest.getPassword(),
+                user.getPassword()))
+                .thenReturn(false);
+
+
+        assertThrows(
+                InvalidCredentialsException.class,
+                () -> userService.authenticate(loginRequest));
+    }
+
+
+    @Test
+    void login_ShouldReturnLoginResponse() {
+
+        when(userRepository.findByEmail(
+                loginRequest.getUsername()))
+                .thenReturn(Optional.of(user));
+
+        when(passwordEncoder.matches(
+                loginRequest.getPassword(),
+                user.getPassword()))
+                .thenReturn(true);
+
+
+        LoginResponse response =
+                userService.login(loginRequest);
+
+
+        assertNotNull(response);
+
+        assertEquals(
+                1L,
+                response.getId());
+
+        assertEquals(
+                "Hanzla",
+                response.getFirstName());
+
+        assertEquals(
+                "Login Successful",
+                response.getMessage());
+    }
+
+
+    @Test
+    void changePassword_ShouldChangePasswordSuccessfully() {
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(passwordEncoder.matches(
+                changePasswordRequest.getOldPassword(),
+                user.getPassword()))
+                .thenReturn(true);
+
+        when(passwordEncoder.encode(
+                changePasswordRequest.getNewPassword()))
+                .thenReturn("newEncodedPassword");
+
+
+        String response =
+                userService.changePassword(
+                        1L,
+                        changePasswordRequest);
+
+
+        assertEquals(
+                "Password changed successfully",
+                response);
+
+
+        verify(passwordEncoder)
+                .encode("654321");
+
+        verify(userRepository)
+                .save(user);
+    }
+
+
+    @Test
+    void changePassword_ShouldThrowUserNotFoundException() {
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.empty());
+
+
+        assertThrows(
+                UserNotFoundException.class,
+                () -> userService.changePassword(
+                        1L,
+                        changePasswordRequest));
+    }
+
+
+    @Test
+    void changePassword_ShouldThrowInvalidPassword_WhenOldPasswordWrong() {
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(passwordEncoder.matches(
+                changePasswordRequest.getOldPassword(),
+                user.getPassword()))
+                .thenReturn(false);
+
+
+        assertThrows(
+                InvalidPasswordException.class,
+                () -> userService.changePassword(
+                        1L,
+                        changePasswordRequest));
+
+
+        verify(userRepository, never())
+                .save(any(User.class));
+    }
+
+
+    @Test
+    void changePassword_ShouldThrowInvalidPassword_WhenPasswordsDoNotMatch() {
+
+        changePasswordRequest
+                .setConfirmPassword("differentPassword");
+
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(passwordEncoder.matches(
+                changePasswordRequest.getOldPassword(),
+                user.getPassword()))
+                .thenReturn(true);
+
+
+        assertThrows(
+                InvalidPasswordException.class,
+                () -> userService.changePassword(
+                        1L,
+                        changePasswordRequest));
+
+
+        verify(userRepository, never())
+                .save(any(User.class));
+    }
 }
