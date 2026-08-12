@@ -16,11 +16,13 @@ public class DashboardController {
 
     private final DashboardService dashboardService;
 
+
     @GetMapping
     public ResponseEntity<DashboardResponse> getDashboard(
             Authentication authentication) {
 
-        Long userId = (Long) authentication.getPrincipal();
+        Long userId =
+                (Long) authentication.getPrincipal();
 
         return ResponseEntity.ok(
                 dashboardService.getDashboard(userId)

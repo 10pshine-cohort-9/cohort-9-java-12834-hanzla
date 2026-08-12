@@ -1,4 +1,5 @@
 package com.tenpearls.contactmanagementsystem.exception;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -68,23 +69,35 @@ if (fieldError != null) {
     return buildResponse(HttpStatus.BAD_REQUEST, message);
 }
 
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<Map<String, Object>> handleConstraint(
-            ConstraintViolationException ex) {
+@ExceptionHandler(ConstraintViolationException.class)
+public ResponseEntity<Map<String, Object>> handleConstraint(
+        ConstraintViolationException ex) {
 
-        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    return buildResponse(
+            HttpStatus.BAD_REQUEST,
+            ex.getMessage()
+    );
+}
 
-    }
+@ExceptionHandler(DataIntegrityViolationException.class)
+public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(
+        DataIntegrityViolationException ex) {
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGeneral(
-            Exception ex) {
+    return buildResponse(
+            HttpStatus.CONFLICT,
+            "Email or phone number already exists"
+    );
+}
 
-        return buildResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                ex.getMessage());
+@ExceptionHandler(Exception.class)
+public ResponseEntity<Map<String, Object>> handleGeneral(
+        Exception ex) {
 
-    }
+    return buildResponse(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            ex.getMessage()
+    );
+}
 
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidCredentials(

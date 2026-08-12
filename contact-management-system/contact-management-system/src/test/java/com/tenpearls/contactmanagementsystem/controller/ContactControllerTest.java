@@ -1,5 +1,11 @@
 package com.tenpearls.contactmanagementsystem.controller;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tenpearls.contactmanagementsystem.dto.ContactRequest;
 import com.tenpearls.contactmanagementsystem.entity.User;
@@ -15,14 +21,10 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -54,7 +56,6 @@ class ContactControllerTest {
         user = userRepository.save(user);
     }
 
-
     private void authenticateUser() {
 
         UsernamePasswordAuthenticationToken authentication =
@@ -72,7 +73,6 @@ class ContactControllerTest {
         SecurityContextHolder.setContext(context);
     }
 
-
     @Test
     void createContact_ShouldReturnCreated() throws Exception {
 
@@ -86,9 +86,9 @@ class ContactControllerTest {
         request.setEmail("ali@gmail.com");
         request.setPhoneNumber("03001111111");
 
-
         mockMvc.perform(
                 post("/api/v1/contacts")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
                                 objectMapper.writeValueAsString(request)
@@ -98,7 +98,6 @@ class ContactControllerTest {
                 .andExpect(jsonPath("$.firstName")
                         .value("Ali"));
     }
-
 
     @Test
     void getAllContacts_ShouldReturnOk() throws Exception {
@@ -110,7 +109,6 @@ class ContactControllerTest {
         )
                 .andExpect(status().isOk());
     }
-
 
     @Test
     void searchContacts_ShouldReturnOk() throws Exception {

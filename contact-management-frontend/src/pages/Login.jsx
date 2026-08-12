@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -6,15 +6,20 @@ import {
     FaLock,
     FaSignInAlt
 } from "react-icons/fa";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 
 import authService from "../services/authService";
-import { ToastContainer } from "react-toastify";
-import { useEffect } from "react";
+
 
 const Login = () => {
 
     const navigate = useNavigate();
+
+
+    /*
+     * If the user is already logged in,
+     * redirect them to the dashboard.
+     */
     useEffect(() => {
 
         if (localStorage.getItem("user")) {
@@ -23,9 +28,11 @@ const Login = () => {
 
         }
 
-    }, []);
+    }, [navigate]);
+
 
     const [loading, setLoading] = useState(false);
+
 
     const [loginData, setLoginData] = useState({
 
@@ -35,6 +42,10 @@ const Login = () => {
 
     });
 
+
+    /*
+     * Handle input changes.
+     */
     const handleChange = (e) => {
 
         setLoginData({
@@ -47,44 +58,100 @@ const Login = () => {
 
     };
 
+
+    /*
+     * Basic frontend validation.
+     */
     const validateForm = () => {
 
         if (!loginData.username.trim()) {
 
-            toast.error("Email or Phone Number is required");
+            toast.error(
+                "Email or Phone Number is required"
+            );
 
             return false;
 
         }
+
 
         if (!loginData.password.trim()) {
 
-            toast.error("Password is required");
+            toast.error(
+                "Password is required"
+            );
 
             return false;
 
         }
+
 
         return true;
 
     };
 
+
+    /*
+     * Login handler.
+     */
     const handleSubmit = async (e) => {
 
         e.preventDefault();
 
+
+        console.log("LOGIN BUTTON CLICKED");
+
+
+        /*
+         * Validate form before making API calls.
+         */
         if (!validateForm()) {
 
             return;
 
         }
 
+
         try {
 
             setLoading(true);
 
-            const response = await authService.login(loginData);
 
+            /*
+             * First request the CSRF token.
+             *
+             * Spring Security creates the
+             * XSRF-TOKEN cookie here.
+             */
+            console.log("Getting CSRF token...");
+
+            await authService.getCsrfToken();
+
+            console.log("CSRF token received");
+
+
+            /*
+             * Now send the login request.
+             *
+             * Axios is configured to read the
+             * XSRF-TOKEN cookie and send it as
+             * X-XSRF-TOKEN.
+             */
+            console.log("Sending login request...");
+
+            const response =
+                await authService.login(loginData);
+
+
+            console.log(
+                "Login response:",
+                response
+            );
+
+
+            /*
+             * Store the logged-in user's information.
+             */
             localStorage.setItem(
 
                 "user",
@@ -93,20 +160,42 @@ const Login = () => {
 
             );
 
-            toast.success("Login Successful");
 
+            /*
+             * Show success message.
+             */
+            toast.success(
+                "Login Successful"
+            );
+
+
+            /*
+             * Redirect to dashboard.
+             */
             setTimeout(() => {
 
                 navigate("/dashboard");
 
             }, 800);
 
-        }
 
-        catch (error) {
+        } catch (error) {
 
-            console.error(error);
+            console.error(
+                "LOGIN ERROR:",
+                error
+            );
 
+
+            console.error(
+                "LOGIN ERROR RESPONSE:",
+                error.response
+            );
+
+
+            /*
+             * Display backend error when available.
+             */
             toast.error(
 
                 error.response?.data?.message ||
@@ -115,18 +204,20 @@ const Login = () => {
 
             );
 
-        }
 
-        finally {
+        } finally {
 
             setLoading(false);
 
         }
 
     };
+
+
     return (
 
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex justify-center items-center p-6">
+
 
             <motion.div
 
@@ -148,6 +239,9 @@ const Login = () => {
 
             >
 
+
+                {/* Header */}
+
                 <div className="text-center mb-10">
 
                     <h1 className="text-4xl font-bold text-white">
@@ -155,6 +249,7 @@ const Login = () => {
                         Welcome Back
 
                     </h1>
+
 
                     <p className="text-gray-300 mt-3">
 
@@ -164,10 +259,19 @@ const Login = () => {
 
                 </div>
 
+
+                {/* Login Form */}
+
                 <form
+
                     onSubmit={handleSubmit}
+
                     className="space-y-6"
+
                 >
+
+
+                    {/* Username */}
 
                     <div>
 
@@ -177,24 +281,40 @@ const Login = () => {
 
                         </label>
 
+
                         <div className="relative mt-2">
 
                             <FaEnvelope
+
                                 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+
                             />
 
+
                             <input
+
                                 type="text"
+
                                 name="username"
+
                                 value={loginData.username}
+
                                 onChange={handleChange}
+
                                 placeholder="Email or Phone Number"
+
+                                autoComplete="username"
+
                                 className="w-full bg-white rounded-xl py-3 pl-12 pr-4 border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-400 outline-none"
+
                             />
 
                         </div>
 
                     </div>
+
+
+                    {/* Password */}
 
                     <div>
 
@@ -204,11 +324,15 @@ const Login = () => {
 
                         </label>
 
+
                         <div className="relative mt-2">
 
                             <FaLock
+
                                 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+
                             />
+
 
                             <input
 
@@ -222,6 +346,8 @@ const Login = () => {
 
                                 placeholder="Enter your password"
 
+                                autoComplete="current-password"
+
                                 className="w-full bg-white rounded-xl py-3 pl-12 pr-4 border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-400 outline-none"
 
                             />
@@ -230,17 +356,21 @@ const Login = () => {
 
                     </div>
 
+
+                    {/* Login Button */}
+
                     <button
 
                         type="submit"
 
                         disabled={loading}
 
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl flex justify-center items-center gap-3 transition shadow-lg"
+                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white py-3 rounded-xl flex justify-center items-center gap-3 transition shadow-lg"
 
                     >
 
                         <FaSignInAlt />
+
 
                         {
 
@@ -254,7 +384,11 @@ const Login = () => {
 
                     </button>
 
+
                 </form>
+
+
+                {/* Register Link */}
 
                 <div className="text-center mt-8">
 
@@ -263,6 +397,7 @@ const Login = () => {
                         Don't have an account?
 
                     </p>
+
 
                     <Link
 
@@ -278,11 +413,20 @@ const Login = () => {
 
                 </div>
 
+
             </motion.div>
+
+
+            {/* Toast Messages */}
+
             <ToastContainer
+
                 position="top-right"
+
                 autoClose={2500}
+
                 theme="colored"
+
             />
 
         </div>
@@ -290,5 +434,6 @@ const Login = () => {
     );
 
 };
+
 
 export default Login;

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
+import { useEffect } from "react";
+import authService from "./services/authService";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -10,6 +11,11 @@ import Settings from "./pages/Settings";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 
 function App() {
+    useEffect(() => {
+
+    authService.getCsrfToken();
+
+}, []);
 
     return (
 

@@ -1,16 +1,24 @@
 import api from "../api/axios";
 
+
 const getCurrentUser = () => {
-    return JSON.parse(localStorage.getItem("user"));
+
+    const user = localStorage.getItem("user");
+
+    if (!user) {
+        throw new Error("User is not logged in");
+    }
+
+    return JSON.parse(user);
 };
+
 
 const getDashboard = () => {
 
-    const user = getCurrentUser();
-
-    return api.get(`/dashboard/${user.id}`);
+    return api.get("/dashboard");
 
 };
+
 
 export default {
     getDashboard

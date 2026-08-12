@@ -32,7 +32,6 @@ public class ContactController {
 
     private final ContactService contactService;
 
-
     @Operation(
             summary = "Create Contact",
             description = "Creates a new contact for the authenticated user."
@@ -57,7 +56,6 @@ public class ContactController {
                 );
     }
 
-
     @Operation(
             summary = "Get All Contacts",
             description = "Retrieves all contacts of the authenticated user with pagination and sorting."
@@ -67,7 +65,7 @@ public class ContactController {
             description = "Contacts retrieved successfully"
     )
     @GetMapping
-    public ResponseEntity<List<ContactResponse>> getAllContacts(
+    public ResponseEntity<?> getAllContacts(
 
             Authentication authentication,
 
@@ -76,6 +74,31 @@ public class ContactController {
             @RequestParam(defaultValue = "5") int size,
 
             @RequestParam(defaultValue = "firstName") String sortBy) {
+
+        /*
+         * Validate pagination parameters.
+         */
+        if (page < 0) {
+            return ResponseEntity.badRequest()
+                    .body("Page must be greater than or equal to 0");
+        }
+
+        if (size < 1 || size > 100) {
+            return ResponseEntity.badRequest()
+                    .body("Size must be between 1 and 100");
+        }
+
+        /*
+         * Only allow known contact fields for sorting.
+         * This prevents arbitrary/invalid sort properties from
+         * reaching the data-access layer.
+         */
+        if (!isValidSortField(sortBy)) {
+            return ResponseEntity.badRequest()
+                    .body(
+                            "Invalid sortBy. Allowed values: firstName, lastName, email, phoneNumber"
+                    );
+        }
 
         Long userId = getAuthenticatedUserId(authentication);
 
@@ -88,7 +111,6 @@ public class ContactController {
                 )
         );
     }
-
 
     @Operation(
             summary = "Get Contact By ID",
@@ -114,7 +136,6 @@ public class ContactController {
                 )
         );
     }
-
 
     @Operation(
             summary = "Update Contact",
@@ -144,7 +165,6 @@ public class ContactController {
         );
     }
 
-
     @Operation(
             summary = "Delete Contact",
             description = "Deletes a contact belonging to the authenticated user."
@@ -169,7 +189,6 @@ public class ContactController {
 
         return ResponseEntity.noContent().build();
     }
-
 
     @Operation(
             summary = "Search Contacts",
@@ -196,7 +215,6 @@ public class ContactController {
         );
     }
 
-
     @Operation(
             summary = "Toggle Favorite",
             description = "Marks or unmarks a contact as favorite."
@@ -222,6 +240,13 @@ public class ContactController {
         );
     }
 
+    private boolean isValidSortField(String sortBy) {
+
+        return sortBy.equals("firstName")
+                || sortBy.equals("lastName")
+                || sortBy.equals("email")
+                || sortBy.equals("phoneNumber");
+    }
 
     private Long getAuthenticatedUserId(
             Authentication authentication) {

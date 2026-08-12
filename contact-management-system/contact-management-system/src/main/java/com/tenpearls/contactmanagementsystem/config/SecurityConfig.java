@@ -8,6 +8,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -28,38 +29,93 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http)
             throws Exception {
 
+        CookieCsrfTokenRepository csrfTokenRepository =
+                CookieCsrfTokenRepository.withHttpOnlyFalse();
+
         http
-                .csrf(csrf -> csrf.disable())
 
-                .cors(cors -> {})
-
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                /*
+                 * CSRF protection remains enabled.
+                 *
+                 * Login and registration are excluded because
+                 * the user is not authenticated yet.
+                 *
+                 * Contact POST/PUT/PATCH/DELETE requests remain
+                 * protected by CSRF.
+                 */
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(csrfTokenRepository)
+                        .ignoringRequestMatchers(
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/register"
+                        )
                 )
 
+                /*
+                 * Enable CORS.
+                 */
+                .cors(cors -> {})
+
+                /*
+                 * We need HTTP session because the application
+                 * uses session-based authentication.
+                 */
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(
+                                SessionCreationPolicy.IF_REQUIRED
+                        )
+                )
+
+                /*
+                 * Persist SecurityContext in the HTTP session.
+                 */
+                .securityContext(securityContext -> securityContext
+                        .requireExplicitSave(false)
+                )
+
+                /*
+                 * Authorization rules.
+                 */
                 .authorizeHttpRequests(auth -> auth
 
-                        // Public authentication endpoints
+                        /*
+                         * Public authentication endpoints.
+                         */
                         .requestMatchers(
                                 "/api/v1/auth/register",
-                                "/api/v1/auth/login"
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/csrf"
                         ).permitAll()
 
-                        // Swagger / OpenAPI
+                        /*
+                         * Swagger / OpenAPI.
+                         */
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
 
-                        // Everything else requires authentication
+                        /*
+                         * Everything else requires authentication.
+                         */
                         .anyRequest().authenticated()
                 )
 
+                /*
+                 * Logout.
+                 */
                 .logout(logout -> logout
+
                         .logoutUrl("/api/v1/auth/logout")
+
                         .invalidateHttpSession(true)
+
                         .clearAuthentication(true)
-                        .deleteCookies("JSESSIONID")
+
+                        .deleteCookies(
+                                "JSESSIONID",
+                                "XSRF-TOKEN"
+                        )
                 );
 
         return http.build();
@@ -68,7 +124,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration configuration = new CorsConfiguration();
+        CorsConfiguration configuration =
+                new CorsConfiguration();
 
         configuration.setAllowedOrigins(
                 List.of("http://localhost:5173")
@@ -86,7 +143,11 @@ public class SecurityConfig {
         );
 
         configuration.setAllowedHeaders(
-                List.of("*")
+                List.of(
+                        "Content-Type",
+                        "X-XSRF-TOKEN",
+                        "X-Requested-With"
+                )
         );
 
         configuration.setAllowCredentials(true);

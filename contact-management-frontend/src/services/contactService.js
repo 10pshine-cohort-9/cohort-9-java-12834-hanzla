@@ -1,26 +1,15 @@
 import axios from "../api/axios";
 
-const getCurrentUser = () => {
-    return JSON.parse(localStorage.getItem("user"));
-};
 const getContacts = (page = 0, size = 5) => {
-
-    const user = getCurrentUser();
-
     return axios.get(
-        `/contacts/user/${user.id}?page=${page}&size=${size}&sortBy=firstName`
+        `/contacts?page=${page}&size=${size}&sortBy=firstName`
     );
-
 };
 
 const searchContacts = (keyword) => {
-
-    const user = getCurrentUser();
-
     return axios.get(
-        `/contacts/user/${user.id}/search?keyword=${keyword}`
+        `/contacts/search?keyword=${encodeURIComponent(keyword)}`
     );
-
 };
 
 const createContact = (contact) => {

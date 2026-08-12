@@ -26,6 +26,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 
 import org.springframework.web.bind.annotation.*;
@@ -43,6 +44,10 @@ public class UserController {
 
     private final UserService userService;
 
+    private final HttpSessionSecurityContextRepository
+            securityContextRepository =
+            new HttpSessionSecurityContextRepository();
+
     @Operation(
             summary = "Register User",
             description = "Registers a new user in the system."
@@ -55,13 +60,30 @@ public class UserController {
     public ResponseEntity<RegisterResponse> register(
             @Valid @RequestBody RegisterRequest request) {
 
-        return ResponseEntity.status(HttpStatus.CREATED)
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
                 .body(userService.register(request));
     }
 
     @Operation(
+            summary = "Get CSRF Token",
+            description = "Provides a CSRF token to the frontend."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "CSRF token returned successfully"
+    )
+    @GetMapping("/csrf")
+    public ResponseEntity<String> csrf(CsrfToken csrfToken) {
+
+        return ResponseEntity.ok(
+                csrfToken.getToken()
+        );
+    }
+
+    @Operation(
             summary = "Login User",
-            description = "Authenticates a user using email or phone number and creates a session."
+            description = "Authenticates a user and creates a secure session."
     )
     @ApiResponse(
             responseCode = "200",
@@ -75,6 +97,19 @@ public class UserController {
 
         User user = userService.authenticate(request);
 
+        /*
+         * Create/obtain the HTTP session.
+         */
+        httpRequest.getSession(true);
+
+        /*
+         * Rotate session ID after successful authentication.
+         */
+        httpRequest.changeSessionId();
+
+        /*
+         * Create authenticated principal using user ID.
+         */
         Authentication authentication =
                 new UsernamePasswordAuthenticationToken(
                         user.getId(),
@@ -82,6 +117,9 @@ public class UserController {
                         Collections.emptyList()
                 );
 
+        /*
+         * Create SecurityContext.
+         */
         SecurityContext context =
                 SecurityContextHolder.createEmptyContext();
 
@@ -89,10 +127,9 @@ public class UserController {
 
         SecurityContextHolder.setContext(context);
 
-        HttpSessionSecurityContextRepository
-                securityContextRepository =
-                new HttpSessionSecurityContextRepository();
-
+        /*
+         * Explicitly save SecurityContext to HTTP session.
+         */
         securityContextRepository.saveContext(
                 context,
                 httpRequest,
@@ -114,11 +151,7 @@ public class UserController {
 
     @Operation(
             summary = "Change Password",
-            description = "Changes the password of the currently authenticated user."
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Password changed successfully"
+            description = "Changes the password of the authenticated user."
     )
     @PutMapping("/change-password")
     public ResponseEntity<String> changePassword(
@@ -138,16 +171,17 @@ public class UserController {
 
     @Operation(
             summary = "Logout User",
-            description = "Logs out the currently authenticated user."
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Logout successful"
+            description = "Logs out the authenticated user."
     )
     @PostMapping("/logout")
-    public ResponseEntity<String> logout() {
+    public ResponseEntity<String> logout(
+            HttpServletRequest httpRequest) {
 
         SecurityContextHolder.clearContext();
+
+        if (httpRequest.getSession(false) != null) {
+            httpRequest.getSession(false).invalidate();
+        }
 
         return ResponseEntity.ok(
                 "Logout Successful"
