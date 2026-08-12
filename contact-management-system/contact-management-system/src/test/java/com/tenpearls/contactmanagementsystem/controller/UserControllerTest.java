@@ -48,48 +48,46 @@ class UserControllerTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-
     private String testEmail;
 
     private String testPhone;
 
-@BeforeEach
-void setup() {
+    @BeforeEach
+    void setup() {
 
-    testEmail =
-            "junit-" + System.nanoTime() + "@example.com";
+        testEmail =
+                "junit-" + System.nanoTime() + "@example.com";
 
-    testPhone =
-            "0311" + (System.nanoTime() % 100000000);
+        testPhone =
+                "0311" + (System.nanoTime() % 100000000);
 
-    User testUser = User.builder()
-            .firstName("JUnit")
-            .lastName("User")
-            .email(testEmail)
-            .phoneNumber(testPhone)
-            .password(
-                    passwordEncoder.encode("123456")
-            )
-            .build();
+        User testUser = User.builder()
+                .firstName("JUnit")
+                .lastName("User")
+                .email(testEmail)
+                .phoneNumber(testPhone)
+                .password(
+                        passwordEncoder.encode("123456")
+                )
+                .build();
 
-    userRepository.save(testUser);
-}
+        userRepository.save(testUser);
+    }
 
-private UsernamePasswordAuthenticationToken
-createAuthentication() {
+    private UsernamePasswordAuthenticationToken
+    createAuthentication() {
 
-    Long userId = userRepository
-            .findByEmail(testEmail)
-            .orElseThrow()
-            .getId();
+        Long userId = userRepository
+                .findByEmail(testEmail)
+                .orElseThrow()
+                .getId();
 
-    return new UsernamePasswordAuthenticationToken(
-            userId,
-            null,
-            Collections.emptyList()
-    );
-}
-
+        return new UsernamePasswordAuthenticationToken(
+                userId,
+                null,
+                Collections.emptyList()
+        );
+    }
 
     @Test
     void register_ShouldReturnCreated() throws Exception {
@@ -113,7 +111,6 @@ createAuthentication() {
 
         request.setPassword("123456");
 
-
         mockMvc.perform(
                 post("/api/v1/auth/register")
                         .with(csrf())
@@ -129,7 +126,6 @@ createAuthentication() {
                 );
     }
 
-
     @Test
     void login_ShouldReturnOk() throws Exception {
 
@@ -138,7 +134,6 @@ createAuthentication() {
 
         request.setUsername(testEmail);
         request.setPassword("123456");
-
 
         mockMvc.perform(
                 post("/api/v1/auth/login")
@@ -155,7 +150,6 @@ createAuthentication() {
                 );
     }
 
-
     @Test
     void changePassword_ShouldReturnOk() throws Exception {
 
@@ -165,7 +159,6 @@ createAuthentication() {
         request.setOldPassword("123456");
         request.setNewPassword("654321");
         request.setConfirmPassword("654321");
-
 
         mockMvc.perform(
                 put("/api/v1/auth/change-password")
@@ -188,7 +181,6 @@ createAuthentication() {
                 );
     }
 
-
     @Test
     void logout_ShouldReturnOk() throws Exception {
 
@@ -201,6 +193,6 @@ createAuthentication() {
                                 )
                         )
         )
-                .andExpect(status().is3xxRedirection());
+                .andExpect(status().isOk());
     }
 }

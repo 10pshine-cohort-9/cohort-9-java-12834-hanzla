@@ -13,10 +13,18 @@ import ProtectedRoute from "./components/common/ProtectedRoute";
 function App() {
     useEffect(() => {
 
-    authService.getCsrfToken();
+    void authService
+        .getCsrfToken()
+        .catch((error) => {
+
+            console.error(
+                "CSRF initialization failed:",
+                error.response?.status || "network error"
+            );
+
+        });
 
 }, []);
-
     return (
 
         <BrowserRouter>

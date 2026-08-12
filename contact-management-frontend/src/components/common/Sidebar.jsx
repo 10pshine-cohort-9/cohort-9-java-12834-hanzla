@@ -41,17 +41,36 @@ const Sidebar = () => {
             // Tell Spring Security to invalidate the session
             await authService.logout();
 
-        } catch (error) {
-
-            console.error("Logout request failed:", error);
-
-        } finally {
-
-            // Always clear local login information
+            /*
+             * Only clear local login information
+             * after the server successfully logs out.
+             */
             localStorage.removeItem("user");
 
             // Return to login page
             navigate("/login");
+
+        } catch (error) {
+
+            /*
+             * Do NOT clear localStorage or redirect
+             * when logout fails.
+             *
+             * The server session may still be active,
+             * so the user should remain logged in and
+             * be allowed to retry.
+             */
+            console.error(
+                "Logout failed:",
+                error.response?.status || "network error"
+            );
+
+            await Swal.fire({
+                title: "Logout Failed",
+                text: "Unable to logout. Please try again.",
+                icon: "error",
+                confirmButtonColor: "#2563eb"
+            });
         }
     };
 

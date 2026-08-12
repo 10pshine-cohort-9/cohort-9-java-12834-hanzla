@@ -10,11 +10,9 @@ import { toast, ToastContainer } from "react-toastify";
 
 import authService from "../services/authService";
 
-
 const Login = () => {
 
     const navigate = useNavigate();
-
 
     /*
      * If the user is already logged in,
@@ -99,9 +97,6 @@ const Login = () => {
         e.preventDefault();
 
 
-        console.log("LOGIN BUTTON CLICKED");
-
-
         /*
          * Validate form before making API calls.
          */
@@ -123,11 +118,7 @@ const Login = () => {
              * Spring Security creates the
              * XSRF-TOKEN cookie here.
              */
-            console.log("Getting CSRF token...");
-
             await authService.getCsrfToken();
-
-            console.log("CSRF token received");
 
 
             /*
@@ -137,15 +128,19 @@ const Login = () => {
              * XSRF-TOKEN cookie and send it as
              * X-XSRF-TOKEN.
              */
-            console.log("Sending login request...");
-
             const response =
                 await authService.login(loginData);
 
 
+            /*
+             * Log only the HTTP status.
+             *
+             * Do not log the complete response because
+             * it may contain user profile information.
+             */
             console.log(
-                "Login response:",
-                response
+                "Login successful:",
+                response.status
             );
 
 
@@ -181,15 +176,15 @@ const Login = () => {
 
         } catch (error) {
 
+            /*
+             * Log only a sanitized status.
+             *
+             * Do not log the complete Axios error because
+             * error.config.data may contain the password.
+             */
             console.error(
-                "LOGIN ERROR:",
-                error
-            );
-
-
-            console.error(
-                "LOGIN ERROR RESPONSE:",
-                error.response
+                "Login failed:",
+                error.response?.status || "network error"
             );
 
 
@@ -434,6 +429,5 @@ const Login = () => {
     );
 
 };
-
 
 export default Login;

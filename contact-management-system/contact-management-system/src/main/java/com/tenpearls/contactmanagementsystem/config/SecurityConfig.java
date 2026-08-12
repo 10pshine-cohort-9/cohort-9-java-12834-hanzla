@@ -2,13 +2,18 @@ package com.tenpearls.contactmanagementsystem.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+
+import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -22,11 +27,13 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http)
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http)
             throws Exception {
 
         CookieCsrfTokenRepository csrfTokenRepository =
@@ -57,7 +64,7 @@ public class SecurityConfig {
                 .cors(cors -> {})
 
                 /*
-                 * We need HTTP session because the application
+                 * HTTP session is required because the application
                  * uses session-based authentication.
                  */
                 .sessionManagement(session -> session
@@ -102,7 +109,10 @@ public class SecurityConfig {
                 )
 
                 /*
-                 * Logout.
+                 * Spring Security owns the logout endpoint.
+                 *
+                 * Return HTTP 200 instead of redirecting because
+                 * this is a REST API.
                  */
                 .logout(logout -> logout
 
@@ -115,6 +125,10 @@ public class SecurityConfig {
                         .deleteCookies(
                                 "JSESSIONID",
                                 "XSRF-TOKEN"
+                        )
+
+                        .logoutSuccessHandler(
+                                new HttpStatusReturningLogoutSuccessHandler()
                         )
                 );
 

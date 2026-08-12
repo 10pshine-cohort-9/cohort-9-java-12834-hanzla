@@ -168,23 +168,4 @@ public class UserController {
                 )
         );
     }
-
-    @Operation(
-            summary = "Logout User",
-            description = "Logs out the authenticated user."
-    )
-    @PostMapping("/logout")
-    public ResponseEntity<String> logout(
-            HttpServletRequest httpRequest) {
-
-        SecurityContextHolder.clearContext();
-
-        if (httpRequest.getSession(false) != null) {
-            httpRequest.getSession(false).invalidate();
-        }
-
-        return ResponseEntity.ok(
-                "Logout Successful"
-        );
-    }
 }
