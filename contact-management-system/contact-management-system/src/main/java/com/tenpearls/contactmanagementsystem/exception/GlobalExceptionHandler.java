@@ -145,10 +145,7 @@ public class GlobalExceptionHandler {
     handleMessageNotReadable(
             HttpMessageNotReadableException ex) {
 
-        logger.warn(
-                "Malformed request body received: {}",
-                ex.getMessage()
-        );
+logger.warn("Malformed request body received");
 
         return buildResponse(
                 HttpStatus.BAD_REQUEST,
