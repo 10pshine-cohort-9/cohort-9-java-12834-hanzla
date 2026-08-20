@@ -1,0 +1,23 @@
+# VS Code
+.vscode/
+
+# Frontend
+contact-management-frontend/node_modules/
+contact-management-frontend/dist/
+
+# Backend
+contact-management-system/contact-management-system/target/
+
+# Maven
+**/target/
+
+# Logs
+*.log
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+HELP.mderror.txt
