@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -317,11 +317,10 @@ class ContactServiceTest {
     @Test
     void searchContacts_ShouldReturnMatchingContacts() {
 
-        when(contactRepository.searchContacts(
-                eq(1L),
-                eq("Ali")
-        )).thenReturn(List.of(contact));
-
+       when(contactRepository.searchContacts(
+        1L,
+        "Ali"
+)).thenReturn(List.of(contact));
         List<ContactResponse> responses =
                 contactService.searchContacts(
                         1L,
@@ -347,10 +346,10 @@ class ContactServiceTest {
     @Test
     void searchContacts_ShouldReturnEmptyList() {
 
-        when(contactRepository.searchContacts(
-                eq(1L),
-                eq("XYZ")
-        )).thenReturn(List.of());
+       when(contactRepository.searchContacts(
+        1L,
+        "XYZ"
+)).thenReturn(List.of());
 
         List<ContactResponse> responses =
                 contactService.searchContacts(

@@ -4,9 +4,7 @@ package com.tenpearls.contactmanagementsystem.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-import java.time.LocalDateTime;
+
 
 @Entity
 @Table(name = "users")

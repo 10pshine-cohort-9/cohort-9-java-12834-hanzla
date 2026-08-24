@@ -60,11 +60,7 @@ public class ContactService {
                 .title(request.getTitle())
                 .email(request.getEmail())
                 .phoneNumber(request.getPhoneNumber())
-                .favorite(
-                        request.getFavorite() != null
-                                ? request.getFavorite()
-                                : false
-                )
+                .favorite(Boolean.TRUE.equals(request.getFavorite()))
                 .user(user)
                 .build();
 
