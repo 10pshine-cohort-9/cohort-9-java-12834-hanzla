@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { toast } from "react-toastify";
 import {
     FaUser,
     FaEnvelope,
     FaPhone,
     FaBriefcase,
     FaTimes,
-    FaSave
+    FaSave,
+    FaTag
 } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 import contactService from "../../services/contactService";
 
@@ -18,8 +19,9 @@ const ContactForm = ({
     onSuccess
 }) => {
 
-    // Logged in user
-    const currentUser = JSON.parse(localStorage.getItem("user"));
+    const currentUser = JSON.parse(
+        localStorage.getItem("user")
+    );
 
     const [formData, setFormData] = useState({
         firstName: "",
@@ -93,7 +95,7 @@ const ContactForm = ({
         }
 
         if (!formData.emailType.trim()) {
-            toast.error("Email Type is required");
+            toast.error("Email type is required");
             return false;
         }
 
@@ -103,7 +105,7 @@ const ContactForm = ({
         }
 
         if (!formData.phoneType.trim()) {
-            toast.error("Phone Type is required");
+            toast.error("Phone type is required");
             return false;
         }
 
@@ -127,7 +129,9 @@ const ContactForm = ({
                     formData
                 );
 
-                toast.success("Contact Updated Successfully");
+                toast.success(
+                    "Contact updated successfully"
+                );
 
             } else {
 
@@ -135,19 +139,25 @@ const ContactForm = ({
                     formData
                 );
 
-                toast.success("Contact Added Successfully");
+                toast.success(
+                    "Contact added successfully"
+                );
             }
 
             onSuccess();
 
         } catch (error) {
 
-            console.error(error);
-
-            toast.error(
-                error.response?.data?.message ||
-                "Operation Failed"
+            console.error(
+                "Contact operation failed:",
+                error
             );
+
+            const message =
+                error.response?.data?.message ||
+                "Operation failed. Please try again.";
+
+            toast.error(message);
 
         } finally {
 
@@ -161,11 +171,22 @@ const ContactForm = ({
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
 
             <motion.div
-                initial={{ opacity: 0, scale: 0.85 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.85 }}
-                transition={{ duration: 0.25 }}
-                className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                initial={{
+                    opacity: 0,
+                    scale: 0.85
+                }}
+                animate={{
+                    opacity: 1,
+                    scale: 1
+                }}
+                exit={{
+                    opacity: 0,
+                    scale: 0.85
+                }}
+                transition={{
+                    duration: 0.25
+                }}
+                className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden max-h-[95vh] overflow-y-auto"
             >
 
                 {/* Header */}
@@ -175,13 +196,15 @@ const ContactForm = ({
                     <div>
 
                         <h2 className="text-3xl font-bold text-white">
-                            {contact ? "Edit Contact" : "Add Contact"}
+                            {contact
+                                ? "Edit Contact"
+                                : "Add Contact"}
                         </h2>
 
                         <p className="text-blue-100 mt-1">
                             {contact
                                 ? "Update your contact information"
-                                : "Add a new contact to your list"}
+                                : "Add someone to your contact list"}
                         </p>
 
                     </div>
@@ -190,7 +213,7 @@ const ContactForm = ({
                         type="button"
                         onClick={onClose}
                         className="text-white hover:text-red-200 transition"
-                        aria-label="Close contact form"
+                        aria-label="Close"
                     >
                         <FaTimes size={24} />
                     </button>
@@ -203,6 +226,8 @@ const ContactForm = ({
                     onSubmit={handleSubmit}
                     className="p-8"
                 >
+
+                    {/* Name */}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -224,7 +249,7 @@ const ContactForm = ({
                                     value={formData.firstName}
                                     onChange={handleChange}
                                     placeholder="Enter first name"
-                                    className="w-full border border-slate-200 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full border border-slate-200 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                                 />
 
                             </div>
@@ -249,7 +274,7 @@ const ContactForm = ({
                                     value={formData.lastName}
                                     onChange={handleChange}
                                     placeholder="Enter last name"
-                                    className="w-full border border-slate-200 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full border border-slate-200 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                                 />
 
                             </div>
@@ -261,7 +286,7 @@ const ContactForm = ({
                         <div>
 
                             <label className="font-semibold text-slate-700">
-                                Title
+                                Job Title
                             </label>
 
                             <div className="relative mt-2">
@@ -274,7 +299,7 @@ const ContactForm = ({
                                     value={formData.title}
                                     onChange={handleChange}
                                     placeholder="e.g. Software Engineer"
-                                    className="w-full border border-slate-200 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full border border-slate-200 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                                 />
 
                             </div>
@@ -299,7 +324,7 @@ const ContactForm = ({
                                     value={formData.email}
                                     onChange={handleChange}
                                     placeholder="example@email.com"
-                                    className="w-full border border-slate-200 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full border border-slate-200 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                                 />
 
                             </div>
@@ -312,30 +337,40 @@ const ContactForm = ({
 
                     <div className="mt-6">
 
-                        <label className="font-semibold text-slate-700">
+                        <label
+                            htmlFor="emailType"
+                            className="font-semibold text-slate-700"
+                        >
                             Email Type
                         </label>
 
-                        <select
-                            name="emailType"
-                            value={formData.emailType}
-                            onChange={handleChange}
-                            className="w-full border border-slate-200 rounded-xl px-4 py-3 mt-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
+                        <div className="relative mt-2">
 
-                            <option value="Personal">
-                                Personal Email
-                            </option>
+                            <FaTag className="absolute left-4 top-4 text-slate-400 pointer-events-none" />
 
-                            <option value="Work">
-                                Work Email
-                            </option>
+                            <select
+                                id="emailType"
+                                name="emailType"
+                                value={formData.emailType}
+                                onChange={handleChange}
+                                className="w-full border border-slate-200 rounded-xl pl-12 pr-4 py-3 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer"
+                            >
 
-                            <option value="Other">
-                                Other Email
-                            </option>
+                                <option value="Personal">
+                                    Personal
+                                </option>
 
-                        </select>
+                                <option value="Work">
+                                    Work
+                                </option>
+
+                                <option value="Other">
+                                    Other
+                                </option>
+
+                            </select>
+
+                        </div>
 
                     </div>
 
@@ -356,8 +391,8 @@ const ContactForm = ({
                                 name="phoneNumber"
                                 value={formData.phoneNumber}
                                 onChange={handleChange}
-                                placeholder="Enter phone number"
-                                className="w-full border border-slate-200 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="e.g. 03001234567"
+                                className="w-full border border-slate-200 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                             />
 
                         </div>
@@ -368,46 +403,56 @@ const ContactForm = ({
 
                     <div className="mt-6">
 
-                        <label className="font-semibold text-slate-700">
+                        <label
+                            htmlFor="phoneType"
+                            className="font-semibold text-slate-700"
+                        >
                             Phone Type
                         </label>
 
-                        <select
-                            name="phoneType"
-                            value={formData.phoneType}
-                            onChange={handleChange}
-                            className="w-full border border-slate-200 rounded-xl px-4 py-3 mt-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
+                        <div className="relative mt-2">
 
-                            <option value="Personal">
-                                Personal Phone
-                            </option>
+                            <FaTag className="absolute left-4 top-4 text-slate-400 pointer-events-none" />
 
-                            <option value="Work">
-                                Work Phone
-                            </option>
+                            <select
+                                id="phoneType"
+                                name="phoneType"
+                                value={formData.phoneType}
+                                onChange={handleChange}
+                                className="w-full border border-slate-200 rounded-xl pl-12 pr-4 py-3 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer"
+                            >
 
-                            <option value="Home">
-                                Home Phone
-                            </option>
+                                <option value="Personal">
+                                    Personal
+                                </option>
 
-                            <option value="Other">
-                                Other Phone
-                            </option>
+                                <option value="Work">
+                                    Work
+                                </option>
 
-                        </select>
+                                <option value="Home">
+                                    Home
+                                </option>
+
+                                <option value="Other">
+                                    Other
+                                </option>
+
+                            </select>
+
+                        </div>
 
                     </div>
 
                     {/* Actions */}
 
-                    <div className="flex justify-end gap-4 mt-10">
+                    <div className="flex justify-end gap-4 mt-10 pt-6 border-t border-slate-100">
 
                         <button
                             type="button"
                             onClick={onClose}
                             disabled={loading}
-                            className="px-6 py-3 rounded-xl border border-slate-200 hover:bg-slate-100 transition disabled:opacity-50"
+                            className="px-6 py-3 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-100 transition disabled:opacity-50"
                         >
                             Cancel
                         </button>
@@ -415,7 +460,7 @@ const ContactForm = ({
                         <button
                             type="submit"
                             disabled={loading}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl flex items-center gap-3 transition shadow-lg disabled:opacity-60"
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl flex items-center gap-3 transition shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                         >
 
                             <FaSave />
