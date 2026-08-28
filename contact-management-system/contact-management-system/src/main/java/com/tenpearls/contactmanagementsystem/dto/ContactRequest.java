@@ -42,7 +42,7 @@ public class ContactRequest {
 
     @NotBlank(message = "Phone number is required")
     @Pattern(
-            regexp = "^\\+?[0-9][0-9\\s()\\-]{6,19}$",
+            regexp = "^(?=(?:.*\\d){7,})\\+?[0-9][0-9\\s()\\-]{6,19}$",
             message = "Please enter a valid phone number"
     )
     private String phoneNumber;
