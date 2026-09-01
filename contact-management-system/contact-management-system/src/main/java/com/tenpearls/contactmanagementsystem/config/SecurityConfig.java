@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 
@@ -27,45 +28,47 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-
         return new BCryptPasswordEncoder();
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(
-            HttpSecurity http)
-            throws Exception {
+            HttpSecurity http) throws Exception {
 
+        /*
+         * CSRF configuration
+         *
+         * The token is stored in the XSRF-TOKEN cookie.
+         * JavaScript/frontend sends it back using X-XSRF-TOKEN.
+         */
         CookieCsrfTokenRepository csrfTokenRepository =
                 CookieCsrfTokenRepository.withHttpOnlyFalse();
+
+        CsrfTokenRequestAttributeHandler csrfRequestHandler =
+                new CsrfTokenRequestAttributeHandler();
 
         http
 
                 /*
-                 * CSRF protection remains enabled.
+                 * CSRF protection remains ENABLED.
                  *
-                 * Login and registration are excluded because
-                 * the user is not authenticated yet.
-                 *
-                 * Contact POST/PUT/PATCH/DELETE requests remain
-                 * protected by CSRF.
+                 * Authentication endpoints are public through
+                 * permitAll(), but they remain protected by CSRF.
                  */
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
-                        .ignoringRequestMatchers(
-                                "/api/v1/auth/login",
-                                "/api/v1/auth/register"
-                        )
+                        .csrfTokenRequestHandler(csrfRequestHandler)
                 )
 
                 /*
-                 * Enable CORS.
+                 * CORS
                  */
-                .cors(cors -> {})
+                .cors(cors -> cors.configurationSource(
+                        corsConfigurationSource()
+                ))
 
                 /*
-                 * HTTP session is required because the application
-                 * uses session-based authentication.
+                 * Session-based authentication.
                  */
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(
@@ -74,7 +77,7 @@ public class SecurityConfig {
                 )
 
                 /*
-                 * Persist SecurityContext in the HTTP session.
+                 * Persist SecurityContext in HTTP session.
                  */
                 .securityContext(securityContext -> securityContext
                         .requireExplicitSave(false)
@@ -86,7 +89,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         /*
-                         * Public authentication endpoints.
+                         * Public authentication APIs.
                          */
                         .requestMatchers(
                                 "/api/v1/auth/register",
@@ -95,10 +98,11 @@ public class SecurityConfig {
                         ).permitAll()
 
                         /*
-                         * Swagger / OpenAPI.
+                         * Swagger/OpenAPI.
                          */
                         .requestMatchers(
                                 "/swagger-ui/**",
+                                "/swagger-ui.html",
                                 "/v3/api-docs/**"
                         ).permitAll()
 
@@ -109,10 +113,7 @@ public class SecurityConfig {
                 )
 
                 /*
-                 * Spring Security owns the logout endpoint.
-                 *
-                 * Return HTTP 200 instead of redirecting because
-                 * this is a REST API.
+                 * REST logout.
                  */
                 .logout(logout -> logout
 
@@ -142,7 +143,9 @@ public class SecurityConfig {
                 new CorsConfiguration();
 
         configuration.setAllowedOrigins(
-                List.of("http://localhost:5173")
+                List.of(
+                        "http://localhost:5173"
+                )
         );
 
         configuration.setAllowedMethods(
@@ -160,7 +163,8 @@ public class SecurityConfig {
                 List.of(
                         "Content-Type",
                         "X-XSRF-TOKEN",
-                        "X-Requested-With"
+                        "X-Requested-With",
+                        "Accept"
                 )
         );
 

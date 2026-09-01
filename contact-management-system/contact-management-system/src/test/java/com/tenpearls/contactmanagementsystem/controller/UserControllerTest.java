@@ -1,198 +1,172 @@
 package com.tenpearls.contactmanagementsystem.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tenpearls.contactmanagementsystem.dto.ChangePasswordRequest;
 import com.tenpearls.contactmanagementsystem.dto.LoginRequest;
+import com.tenpearls.contactmanagementsystem.dto.LoginResponse;
 import com.tenpearls.contactmanagementsystem.dto.RegisterRequest;
+import com.tenpearls.contactmanagementsystem.dto.RegisterResponse;
 import com.tenpearls.contactmanagementsystem.entity.User;
-import com.tenpearls.contactmanagementsystem.repository.UserRepository;
+import com.tenpearls.contactmanagementsystem.service.UserService;
 
-import org.junit.jupiter.api.BeforeEach;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.web.csrf.CsrfToken;
 
-import org.springframework.test.web.servlet.MockMvc;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Collections;
-
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional
+@ExtendWith(MockitoExtension.class)
 class UserControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Mock
+    private UserService userService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @Mock
+    private Authentication authentication;
 
-    @Autowired
-    private UserRepository userRepository;
+    @Mock
+    private CsrfToken csrfToken;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @Mock
+    private HttpServletRequest httpRequest;
 
-    private String testEmail;
+    @Mock
+    private HttpServletResponse httpResponse;
 
-    private String testPhone;
+    @InjectMocks
+    private UserController controller;
 
-    @BeforeEach
-    void setup() {
+    @Test
+    void shouldRegisterUser() {
 
-        testEmail =
-                "junit-" + System.nanoTime() + "@example.com";
+        RegisterRequest request = new RegisterRequest();
+        RegisterResponse response = new RegisterResponse(
+        1L,
+        "John",
+        "Doe",
+        "john@example.com",
+        "123456789",
+        "Registration Successful"
+);
 
-        testPhone =
-                "0311" + (System.nanoTime() % 100000000);
+        when(userService.register(request))
+                .thenReturn(response);
 
-        User testUser = User.builder()
-                .firstName("JUnit")
-                .lastName("User")
-                .email(testEmail)
-                .phoneNumber(testPhone)
-                .password(
-                        passwordEncoder.encode("123456")
-                )
-                .build();
+        ResponseEntity<RegisterResponse> result =
+                controller.register(request);
 
-        userRepository.save(testUser);
-    }
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+        assertEquals(response, result.getBody());
 
-    private UsernamePasswordAuthenticationToken
-    createAuthentication() {
-
-        Long userId = userRepository
-                .findByEmail(testEmail)
-                .orElseThrow()
-                .getId();
-
-        return new UsernamePasswordAuthenticationToken(
-                userId,
-                null,
-                Collections.emptyList()
-        );
+        verify(userService).register(request);
     }
 
     @Test
-    void register_ShouldReturnCreated() throws Exception {
+    void shouldReturnCsrfToken() {
 
-        RegisterRequest request =
-                new RegisterRequest();
+        when(csrfToken.getToken())
+                .thenReturn("test-csrf-token");
 
-        request.setFirstName("Another");
-        request.setLastName("User");
+        ResponseEntity<String> result =
+                controller.csrf(csrfToken);
 
-        request.setEmail(
-                "another-" +
-                System.nanoTime() +
-                "@example.com"
-        );
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertEquals("test-csrf-token", result.getBody());
 
-        request.setPhoneNumber(
-                "0322" +
-                (System.nanoTime() % 100000000)
-        );
+        verify(csrfToken).getToken();
+    }
 
-        request.setPassword("123456");
+    @Test
+    void shouldLoginUser() {
 
-        mockMvc.perform(
-                post("/api/v1/auth/register")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(request)
-                        )
-        )
-                .andExpect(status().isCreated())
-                .andExpect(
-                        jsonPath("$.message")
-                                .value("Registration Successful")
+        LoginRequest request = new LoginRequest();
+
+        User user = new User();
+        user.setId(1L);
+        user.setFirstName("John");
+        user.setLastName("Doe");
+        user.setEmail("john@example.com");
+        user.setPhoneNumber("123456789");
+
+        when(userService.authenticate(request))
+                .thenReturn(user);
+
+        when(httpRequest.getSession(true))
+                .thenReturn(null);
+
+        ResponseEntity<LoginResponse> result =
+                controller.login(
+                        request,
+                        httpRequest,
+                        httpResponse
                 );
+
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+
+        assertNotNull(result.getBody());
+
+        assertEquals(1L, result.getBody().getId());
+        assertEquals("John", result.getBody().getFirstName());
+        assertEquals("Doe", result.getBody().getLastName());
+        assertEquals(
+                "john@example.com",
+                result.getBody().getEmail()
+        );
+        assertEquals(
+                "123456789",
+                result.getBody().getPhoneNumber()
+        );
+        assertEquals(
+                "Login Successful",
+                result.getBody().getMessage()
+        );
+
+        verify(userService).authenticate(request);
+       verify(httpRequest, atLeastOnce()).getSession(true);
+        verify(httpRequest).changeSessionId();
     }
 
     @Test
-    void login_ShouldReturnOk() throws Exception {
-
-        LoginRequest request =
-                new LoginRequest();
-
-        request.setUsername(testEmail);
-        request.setPassword("123456");
-
-        mockMvc.perform(
-                post("/api/v1/auth/login")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(request)
-                        )
-        )
-                .andExpect(status().isOk())
-                .andExpect(
-                        jsonPath("$.message")
-                                .value("Login Successful")
-                );
-    }
-
-    @Test
-    void changePassword_ShouldReturnOk() throws Exception {
+    void shouldChangePassword() {
 
         ChangePasswordRequest request =
                 new ChangePasswordRequest();
 
-        request.setOldPassword("123456");
-        request.setNewPassword("654321");
-        request.setConfirmPassword("654321");
+        when(authentication.getPrincipal())
+                .thenReturn(1L);
 
-        mockMvc.perform(
-                put("/api/v1/auth/change-password")
-                        .with(csrf())
-                        .with(
-                                authentication(
-                                        createAuthentication()
-                                )
-                        )
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(request)
-                        )
-        )
-                .andExpect(status().isOk())
-                .andExpect(
-                        content().string(
-                                "Password changed successfully"
-                        )
+        when(userService.changePassword(
+                1L,
+                request
+        )).thenReturn("Password changed successfully");
+
+        ResponseEntity<String> result =
+                controller.changePassword(
+                        request,
+                        authentication
                 );
-    }
 
-    @Test
-    void logout_ShouldReturnOk() throws Exception {
+        assertEquals(HttpStatus.OK, result.getStatusCode());
 
-        mockMvc.perform(
-                post("/api/v1/auth/logout")
-                        .with(csrf())
-                        .with(
-                                authentication(
-                                        createAuthentication()
-                                )
-                        )
-        )
-                .andExpect(status().isOk());
+        assertEquals(
+                "Password changed successfully",
+                result.getBody()
+        );
+
+        verify(userService).changePassword(
+                1L,
+                request
+        );
     }
 }

@@ -17,7 +17,6 @@ import contactService from "../services/contactService";
 import "react-toastify/dist/ReactToastify.css";
 
 const Contacts = () => {
-
     const [contacts, setContacts] = useState([]);
 
     const [loading, setLoading] = useState(true);
@@ -32,105 +31,69 @@ const Contacts = () => {
 
     const size = 6;
 
-const loadContacts = async () => {
+    const loadContacts = async () => {
+        try {
+            setLoading(true);
 
-    try {
+            const response = await contactService.getContacts(page, size);
 
-        setLoading(true);
+            setContacts(response.data);
+        } catch (error) {
+            console.error(error);
 
-        const response = await contactService.getContacts(page, size);
-
-        console.log("FULL RESPONSE:", response);
-        console.log("DATA:", response.data);
-        console.log("IS ARRAY:", Array.isArray(response.data));
-
-        setContacts(response.data);
-
-    }
-
-    catch (error) {
-
-        console.error(error);
-
-        toast.error("Unable to load contacts");
-
-    }
-
-    finally {
-
-        setLoading(false);
-
-    }
-
-};
+            toast.error("Unable to load contacts");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-
         if (keyword.trim() === "") {
-
             loadContacts();
-
-        }
-
-        else {
-
+        } else {
             contactService
-
                 .searchContacts(keyword)
-
                 .then((response) => {
-
                     setContacts(response.data);
-
                 })
-
                 .catch(() => {
-
                     toast.error("Search failed");
 
                     loadContacts();
-
                 });
-
         }
-
     }, [page, keyword]);
 
-
-
     const handleAddClick = () => {
-
         setSelectedContact(null);
 
         setShowModal(true);
-
     };
 
-
-
     const handleEditClick = (contact) => {
-
         setSelectedContact(contact);
 
         setShowModal(true);
-
     };
 
-
-
     const handleSuccess = async () => {
-
         await loadContacts();
 
         setSelectedContact(null);
 
         setShowModal(false);
-
     };
+
+    const handleDelete = async () => {
+        await loadContacts();
+    };
+
+    const handleToggleFavorite = async () => {
+        await loadContacts();
+    };
+
     return (
-
         <DashboardLayout>
-
             <ToastContainer
                 position="top-right"
                 autoClose={2500}
@@ -138,158 +101,81 @@ const loadContacts = async () => {
             />
 
             <motion.div
-
                 initial={{ opacity: 0, y: 25 }}
-
                 animate={{ opacity: 1, y: 0 }}
-
                 transition={{ duration: 0.5 }}
-
                 className="space-y-8"
-
             >
-
                 <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6">
-
                     <div>
-
                         <h1 className="text-4xl font-bold text-slate-800">
-
                             Contacts
-
                         </h1>
 
                         <p className="text-slate-500 mt-2">
-
                             Manage your contacts professionally
-
                         </p>
-
                     </div>
 
                     <PrimaryButton
                         onClick={handleAddClick}
                         className="hover:shadow-xl"
                     >
-
                         <FaPlus />
-
                         Add Contact
-
                     </PrimaryButton>
-
                 </div>
-
-
 
                 <motion.div
-
                     initial={{ opacity: 0 }}
-
                     animate={{ opacity: 1 }}
-
                     transition={{ delay: 0.15 }}
-
                     className="bg-white rounded-2xl shadow-md p-6"
-
                 >
-
                     <SearchBar
-
                         keyword={keyword}
-
                         setKeyword={setKeyword}
-
                     />
-
                 </motion.div>
 
-
-
-                {
-
-                    loading ? (
-
-                        <Loader />
-
-                    ) : (
-
-                        <motion.div
-
-                            initial={{ opacity: 0 }}
-
-                            animate={{ opacity: 1 }}
-
-                            transition={{ delay: 0.2 }}
-
-                            className="bg-white rounded-2xl shadow-md overflow-hidden"
-
-                        >
-
-                            <ContactTable
-
-                                contacts={contacts}
-
-                                onEdit={handleEditClick}
-
-                                onRefresh={loadContacts}
-
-                            />
-
-                        </motion.div>
-
-                    )
-
-                }
-
-
+                {loading ? (
+                    <Loader />
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="bg-white rounded-2xl shadow-md overflow-hidden"
+                    >
+                        <ContactTable
+                            contacts={contacts}
+                            onEdit={handleEditClick}
+                            onDelete={handleDelete}
+                            onToggleFavorite={handleToggleFavorite}
+                        />
+                    </motion.div>
+                )}
 
                 <div className="flex justify-center">
-
                     <Pagination
-
                         page={page}
-
                         setPage={setPage}
-
                     />
-
                 </div>
 
-
-
-                {
-
-                    showModal &&
-
-                    (
-
-                        <ContactForm
-
-                            contact={selectedContact}
-
-                            onClose={() => {
-
-                                setSelectedContact(null);
-
-                                setShowModal(false);
-
-                            }}
-
-                            onSuccess={handleSuccess}
-
-                        />
-
-                    )
-
-                }
-
+                {showModal && (
+                    <ContactForm
+                        contact={selectedContact}
+                        onClose={() => {
+                            setSelectedContact(null);
+                            setShowModal(false);
+                        }}
+                        onSuccess={handleSuccess}
+                    />
+                )}
             </motion.div>
-
         </DashboardLayout>
-
     );
-
 };
 
 export default Contacts;

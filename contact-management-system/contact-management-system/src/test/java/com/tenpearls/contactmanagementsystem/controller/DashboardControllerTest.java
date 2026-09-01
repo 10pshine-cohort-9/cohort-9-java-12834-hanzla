@@ -4,69 +4,100 @@ import com.tenpearls.contactmanagementsystem.dto.DashboardResponse;
 import com.tenpearls.contactmanagementsystem.service.DashboardService;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.test.web.servlet.MockMvc;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-@SpringBootTest
-@AutoConfigureMockMvc
+@ExtendWith(MockitoExtension.class)
 class DashboardControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
+    @Mock
     private DashboardService dashboardService;
 
+    @Mock
+    private Authentication authentication;
+
+    @InjectMocks
+    private DashboardController controller;
+
     @Test
-    void getDashboard_ShouldReturnOk_WhenAuthenticated() throws Exception {
+    void shouldReturnDashboardForAuthenticatedUser() {
 
-        DashboardResponse response =
-                DashboardResponse.builder()
-                        .totalContacts(5L)
-                        .favoriteContacts(2L)
-                        .totalUsers(10L)
-                        .recentContacts(Collections.emptyList())
-                        .build();
+        DashboardResponse response = new DashboardResponse();
 
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getPrincipal()).thenReturn(1L);
         when(dashboardService.getDashboard(1L))
                 .thenReturn(response);
 
-        mockMvc.perform(
-                get("/api/v1/dashboard")
-                        .with(
-                                authentication(
-                                        new UsernamePasswordAuthenticationToken(
-                                                1L,
-                                                null,
-                                                Collections.emptyList()
-                                        )
-                                )
-                        )
-        )
-                .andExpect(status().isOk());
+        ResponseEntity<DashboardResponse> result =
+                controller.getDashboard(authentication);
+
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertEquals(response, result.getBody());
+
+        verify(dashboardService).getDashboard(1L);
     }
 
     @Test
-    void getDashboard_ShouldReturnForbidden_WhenNotAuthenticated()
-            throws Exception {
+    void shouldReturnUnauthorizedWhenAuthenticationIsNull() {
 
-        mockMvc.perform(
-                get("/api/v1/dashboard")
-        )
-                .andExpect(status().isForbidden());
+        ResponseEntity<DashboardResponse> result =
+                controller.getDashboard(null);
+
+        assertEquals(
+                HttpStatus.UNAUTHORIZED,
+                result.getStatusCode()
+        );
+
+        assertNull(result.getBody());
+
+        verifyNoInteractions(dashboardService);
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenUserIsNotAuthenticated() {
+
+        when(authentication.isAuthenticated())
+                .thenReturn(false);
+
+        ResponseEntity<DashboardResponse> result =
+                controller.getDashboard(authentication);
+
+        assertEquals(
+                HttpStatus.UNAUTHORIZED,
+                result.getStatusCode()
+        );
+
+        verifyNoInteractions(dashboardService);
+    }
+
+    @Test
+    void shouldReturnForbiddenWhenPrincipalIsNotLong() {
+
+        when(authentication.isAuthenticated())
+                .thenReturn(true);
+
+        when(authentication.getPrincipal())
+                .thenReturn("invalid-principal");
+
+        ResponseEntity<DashboardResponse> result =
+                controller.getDashboard(authentication);
+
+        assertEquals(
+                HttpStatus.FORBIDDEN,
+                result.getStatusCode()
+        );
+
+        verifyNoInteractions(dashboardService);
     }
 }

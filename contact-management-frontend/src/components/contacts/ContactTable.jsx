@@ -1,178 +1,137 @@
 import { motion } from "framer-motion";
 import {
-    FaStar,
-    FaRegStar,
+    FaEnvelope,
+    FaPhone,
     FaEdit,
     FaTrash,
-    FaEnvelope,
-    FaPhone
+    FaStar,
+    FaRegStar,
+    FaBriefcase
 } from "react-icons/fa";
-import Swal from "sweetalert2";
-import { toast } from "react-toastify";
-
-import contactService from "../../services/contactService";
 
 const ContactTable = ({
     contacts,
     onEdit,
-    onRefresh
+    onDelete,
+    onToggleFavorite
 }) => {
 
-    const handleDelete = async (contact) => {
+    if (!contacts || contacts.length === 0) {
+        return (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-12 text-center">
 
-        const result = await Swal.fire({
-            title: "Delete Contact?",
-            text: `Are you sure you want to permanently delete ${contact.firstName} ${contact.lastName}?`,
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#dc2626",
-            cancelButtonColor: "#2563eb",
-            confirmButtonText: "Delete",
-            cancelButtonText: "Cancel"
-        });
+                <div className="text-5xl mb-4">
+                    👥
+                </div>
 
-        if (!result.isConfirmed) return;
+                <h3 className="text-xl font-bold text-slate-800">
+                    No Contacts Found
+                </h3>
 
-        try {
+                <p className="text-slate-500 mt-2">
+                    Add a contact to get started.
+                </p>
 
-            await contactService.deleteContact(contact.id);
-
-            toast.success("Contact Deleted");
-
-            onRefresh();
-
-        } catch {
-
-            toast.error("Unable to delete contact");
-
-        }
-
-    };
-
-    const handleFavorite = async (id) => {
-
-        try {
-
-            await contactService.toggleFavorite(id);
-
-            onRefresh();
-
-        } catch {
-
-            toast.error("Unable to update favorite");
-
-        }
-
-    };
+            </div>
+        );
+    }
 
     return (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
 
-        <div className="overflow-x-auto">
+            {/* Desktop Table */}
 
-            <table className="min-w-full">
+            <div className="hidden lg:block overflow-x-auto">
 
-                <thead>
+                <table className="w-full">
 
-                    <tr className="bg-slate-50 border-b text-slate-600 uppercase tracking-wider text-sm">
+                    <thead>
 
-                        <th className="text-left px-8 py-5">Contact</th>
+                        <tr className="bg-slate-50 border-b border-slate-200">
 
-                        <th className="text-left px-8 py-5">Title</th>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                Contact
+                            </th>
 
-                        <th className="text-left px-8 py-5">Email</th>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                Email
+                            </th>
 
-                        <th className="text-left px-8 py-5">Phone</th>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                Phone
+                            </th>
 
-                        <th className="text-center px-8 py-5">Favorite</th>
+                            <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                Favorite
+                            </th>
 
-                        <th className="text-center px-8 py-5">Actions</th>
+                            <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                Actions
+                            </th>
 
-                    </tr>
+                        </tr>
 
-                </thead>
+                    </thead>
 
-                <tbody>
+                    <tbody className="divide-y divide-slate-100">
 
-                    {
+                        {contacts.map((contact, index) => {
 
-                        contacts.length === 0 ? (
+                            const fullName =
+                                `${contact.firstName || ""} ${contact.lastName || ""}`.trim();
 
-                            <tr>
+                            const initials =
+                                `${contact.firstName?.charAt(0) || ""}${contact.lastName?.charAt(0) || ""}`
+                                    .toUpperCase();
 
-                                <td
-                                    colSpan="6"
-                                    className="text-center py-20 text-slate-400"
-                                >
-
-                                    <div className="flex flex-col items-center">
-
-                                        <h3 className="text-2xl font-semibold">
-
-                                            No Contacts Found
-
-                                        </h3>
-
-                                        <p className="text-slate-500 mt-2">
-
-                                            Click "Add Contact" to create your first contact.
-
-                                        </p>
-
-                                    </div>
-
-                                </td>
-
-                            </tr>
-
-                        ) : (
-
-                            contacts.map((contact, index) => (
+                            return (
 
                                 <motion.tr
-
                                     key={contact.id}
-
                                     initial={{
                                         opacity: 0,
-                                        y: 20
+                                        y: 10
                                     }}
-
                                     animate={{
                                         opacity: 1,
                                         y: 0
                                     }}
-
                                     transition={{
-                                        delay: index * 0.05
+                                        delay: index * 0.03
                                     }}
-
-                                    className="border-b hover:bg-blue-50 hover:shadow-sm transition-all duration-300"
-
+                                    className="hover:bg-slate-50 transition"
                                 >
 
-                                    <td className="px-8 py-6">
+                                    {/* Contact */}
+
+                                    <td className="px-6 py-5">
 
                                         <div className="flex items-center gap-4">
 
-                                            <div className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex justify-center items-center font-bold text-xl shadow">
-
-                                                {`${contact.firstName?.charAt(0) || ""}${contact.lastName?.charAt(0) || ""}`.toUpperCase()}
-
+                                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold shadow-sm">
+                                                {initials || "?"}
                                             </div>
 
                                             <div>
 
-                                                <h3 className="font-semibold text-slate-800 text-lg">
-
-                                                    {contact.firstName} {contact.lastName}
-
-                                                </h3>
-
-                                                <p className="text-sm text-slate-400 mt-1">
-
-                                                    Contact #{contact.id}
-
+                                                <p className="font-bold text-slate-800">
+                                                    {fullName || "Unnamed Contact"}
                                                 </p>
+
+                                                {contact.title && (
+                                                    <div className="flex items-center gap-2 mt-1">
+
+                                                        <FaBriefcase
+                                                            className="text-slate-400"
+                                                            size={12}
+                                                        />
+
+                                                        <p className="text-sm text-slate-500">
+                                                            {contact.title}
+                                                        </p>
+
+                                                    </div>
+                                                )}
 
                                             </div>
 
@@ -180,94 +139,121 @@ const ContactTable = ({
 
                                     </td>
 
-                                    <td className="px-8 py-6">
 
-                                        <span className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium">
+                                    {/* Email */}
 
-                                            {contact.title || "No Title"}
+                                    <td className="px-6 py-5">
 
-                                        </span>
+                                        <div className="flex items-start gap-3">
 
-                                    </td>
+                                            <div className="mt-1 text-blue-500">
+                                                <FaEnvelope size={15} />
+                                            </div>
 
-                                    <td className="px-8 py-6">
+                                            <div>
 
-                                        <div className="flex items-center gap-3 text-slate-600">
+                                                <p className="text-sm font-medium text-slate-700">
+                                                    {contact.email}
+                                                </p>
 
-                                            <FaEnvelope className="text-blue-600" />
+                                                <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold">
+                                                    {contact.emailType || "Personal"}
+                                                </span>
 
-                                            {contact.email}
-
-                                        </div>
-
-                                    </td>
-
-                                    <td className="px-8 py-6">
-
-                                        <div className="flex items-center gap-3 text-slate-600">
-
-                                            <FaPhone className="text-green-600" />
-
-                                            {contact.phoneNumber}
+                                            </div>
 
                                         </div>
 
                                     </td>
 
-                                    <td className="px-8 py-6 text-center">
+
+                                    {/* Phone */}
+
+                                    <td className="px-6 py-5">
+
+                                        <div className="flex items-start gap-3">
+
+                                            <div className="mt-1 text-emerald-500">
+                                                <FaPhone size={14} />
+                                            </div>
+
+                                            <div>
+
+                                                <p className="text-sm font-medium text-slate-700">
+                                                    {contact.phoneNumber}
+                                                </p>
+
+                                                <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">
+                                                    {contact.phoneType || "Personal"}
+                                                </span>
+
+                                            </div>
+
+                                        </div>
+
+                                    </td>
+
+
+                                    {/* Favorite */}
+
+                                    <td className="px-6 py-5 text-center">
 
                                         <button
-
-                                            onClick={() => handleFavorite(contact.id)}
-
-                                            className="hover:scale-125 transition"
-
+                                            type="button"
+                                            onClick={() =>
+                                                onToggleFavorite(contact.id)
+                                            }
+                                            className="inline-flex items-center justify-center w-10 h-10 rounded-full hover:bg-yellow-50 transition"
+                                            title={
+                                                contact.favorite
+                                                    ? "Remove from favorites"
+                                                    : "Add to favorites"
+                                            }
                                         >
 
-                                            {
-
-                                                contact.favorite
-
-                                                    ?
-
-                                                    <FaStar className="text-yellow-500 text-2xl" />
-
-                                                    :
-
-                                                    <FaRegStar className="text-slate-400 text-2xl" />
-
-                                            }
+                                            {contact.favorite ? (
+                                                <FaStar
+                                                    className="text-yellow-400"
+                                                    size={20}
+                                                />
+                                            ) : (
+                                                <FaRegStar
+                                                    className="text-slate-400 hover:text-yellow-400"
+                                                    size={20}
+                                                />
+                                            )}
 
                                         </button>
 
                                     </td>
 
-                                    <td className="px-8 py-6">
 
-                                        <div className="flex justify-center gap-4">
+                                    {/* Actions */}
+
+                                    <td className="px-6 py-5">
+
+                                        <div className="flex justify-center gap-2">
 
                                             <button
-
-                                                onClick={() => onEdit(contact)}
-
-                                                className="bg-blue-100 text-blue-700 p-3 rounded-xl shadow-sm hover:shadow-md hover:bg-blue-600 hover:text-white transition-all duration-300"
-
+                                                type="button"
+                                                onClick={() =>
+                                                    onEdit(contact)
+                                                }
+                                                className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition flex items-center justify-center"
+                                                title="Edit Contact"
                                             >
-
                                                 <FaEdit />
-
                                             </button>
 
                                             <button
-
-                                                onClick={() => handleDelete(contact)}
-
-                                                className="bg-red-100 text-red-700 p-3 rounded-xl shadow-sm hover:shadow-md hover:bg-red-600 hover:text-white transition-all duration-300"
-
+                                                type="button"
+                                                onClick={() =>
+                                                    onDelete(contact)
+                                                }
+                                                className="w-10 h-10 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition flex items-center justify-center"
+                                                title="Delete Contact"
                                             >
-
                                                 <FaTrash />
-
                                             </button>
 
                                         </div>
@@ -276,20 +262,167 @@ const ContactTable = ({
 
                                 </motion.tr>
 
-                            ))
+                            );
+                        })}
 
-                        )
+                    </tbody>
 
-                    }
+                </table>
 
-                </tbody>
+            </div>
 
-            </table>
+
+            {/* Mobile Cards */}
+
+            <div className="lg:hidden divide-y divide-slate-100">
+
+                {contacts.map((contact, index) => {
+
+                    const fullName =
+                        `${contact.firstName || ""} ${contact.lastName || ""}`.trim();
+
+                    const initials =
+                        `${contact.firstName?.charAt(0) || ""}${contact.lastName?.charAt(0) || ""}`
+                            .toUpperCase();
+
+                    return (
+
+                        <motion.div
+                            key={contact.id}
+                            initial={{
+                                opacity: 0,
+                                y: 10
+                            }}
+                            animate={{
+                                opacity: 1,
+                                y: 0
+                            }}
+                            transition={{
+                                delay: index * 0.03
+                            }}
+                            className="p-5"
+                        >
+
+                            <div className="flex items-start justify-between">
+
+                                <div className="flex items-center gap-3">
+
+                                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold">
+                                        {initials || "?"}
+                                    </div>
+
+                                    <div>
+
+                                        <h3 className="font-bold text-slate-800">
+                                            {fullName || "Unnamed Contact"}
+                                        </h3>
+
+                                        {contact.title && (
+                                            <p className="text-sm text-slate-500">
+                                                {contact.title}
+                                            </p>
+                                        )}
+
+                                    </div>
+
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        onToggleFavorite(contact.id)
+                                    }
+                                    className="p-2"
+                                >
+
+                                    {contact.favorite ? (
+                                        <FaStar className="text-yellow-400" />
+                                    ) : (
+                                        <FaRegStar className="text-slate-400" />
+                                    )}
+
+                                </button>
+
+                            </div>
+
+
+                            <div className="mt-5 space-y-3">
+
+                                <div className="flex items-center gap-3">
+
+                                    <FaEnvelope className="text-blue-500" />
+
+                                    <div>
+
+                                        <p className="text-sm text-slate-700">
+                                            {contact.email}
+                                        </p>
+
+                                        <span className="text-xs font-semibold text-blue-600">
+                                            {contact.emailType || "Personal"}
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div className="flex items-center gap-3">
+
+                                    <FaPhone className="text-emerald-500" />
+
+                                    <div>
+
+                                        <p className="text-sm text-slate-700">
+                                            {contact.phoneNumber}
+                                        </p>
+
+                                        <span className="text-xs font-semibold text-emerald-600">
+                                            {contact.phoneType || "Personal"}
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div className="flex gap-3 mt-5">
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        onEdit(contact)
+                                    }
+                                    className="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-600 font-semibold hover:bg-blue-100 transition flex items-center justify-center gap-2"
+                                >
+                                    <FaEdit />
+                                    Edit
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        onDelete(contact)
+                                    }
+                                    className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition flex items-center justify-center gap-2"
+                                >
+                                    <FaTrash />
+                                    Delete
+                                </button>
+
+                            </div>
+
+                        </motion.div>
+
+                    );
+                })}
+
+            </div>
 
         </div>
-
     );
-
 };
 
 export default ContactTable;

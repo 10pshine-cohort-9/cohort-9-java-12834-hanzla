@@ -59,11 +59,25 @@ const Favorites = () => {
 
     };
 
-    const handleSuccess = () => {
+    const handleSuccess = async () => {
 
-        loadFavorites();
+        await loadFavorites();
 
         setShowModal(false);
+
+        setSelectedContact(null);
+
+    };
+
+    const handleDelete = async () => {
+
+        await loadFavorites();
+
+    };
+
+    const handleToggleFavorite = async () => {
+
+        await loadFavorites();
 
     };
 
@@ -89,75 +103,87 @@ const Favorites = () => {
 
                     </h1>
 
-<p className="text-slate-500 mt-2">
+                    <p className="text-slate-500 mt-2">
 
-    Manage all your favorite contacts from one place.
+                        Manage all your favorite contacts from one place.
 
-</p>
+                    </p>
 
                 </div>
 
-{
-    loading ? (
+                {
 
-        <Loader />
+                    loading ? (
 
-    ) : contacts.length === 0 ? (
+                        <Loader />
 
-        <div className="bg-white rounded-3xl shadow-lg p-16 text-center">
+                    ) : contacts.length === 0 ? (
 
-            <h2 className="text-3xl mb-4">
+                        <div className="bg-white rounded-3xl shadow-lg p-16 text-center">
 
-                ⭐
+                            <h2 className="text-3xl mb-4">
 
-            </h2>
+                                ⭐
 
-            <h3 className="text-2xl font-bold text-slate-700">
+                            </h2>
 
-                No Favorite Contacts
+                            <h3 className="text-2xl font-bold text-slate-700">
 
-            </h3>
+                                No Favorite Contacts
 
-            <p className="text-slate-500 mt-3">
+                            </h3>
 
-                Mark contacts as favorites to see them here.
+                            <p className="text-slate-500 mt-3">
 
-            </p>
+                                Mark contacts as favorites to see them here.
 
-        </div>
+                            </p>
 
-    ) : (
+                        </div>
 
-        <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+                    ) : (
 
-            <ContactTable
+                        <div className="bg-white rounded-2xl shadow-md overflow-hidden">
 
-                contacts={contacts}
+                            <ContactTable
 
-                onEdit={handleEdit}
+                                contacts={contacts}
 
-                onRefresh={loadFavorites}
+                                onEdit={handleEdit}
 
-            />
+                                onDelete={handleDelete}
 
-        </div>
+                                onToggleFavorite={handleToggleFavorite}
 
-    )
-}
+                            />
+
+                        </div>
+
+                    )
+
+                }
 
                 {
 
-                    showModal &&
+                    showModal && (
 
-                    <ContactForm
+                        <ContactForm
 
-                        contact={selectedContact}
+                            contact={selectedContact}
 
-                        onClose={() => setShowModal(false)}
+                            onClose={() => {
 
-                        onSuccess={handleSuccess}
+                                setSelectedContact(null);
 
-                    />
+                                setShowModal(false);
+
+                            }}
+
+                            onSuccess={handleSuccess}
+
+                        />
+
+                    )
 
                 }
 
